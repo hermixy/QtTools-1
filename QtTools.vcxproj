@@ -1,0 +1,100 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" ToolsVersion="12.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup Label="ProjectConfigurations">
+    <ProjectConfiguration Include="Release|Win32">
+      <Configuration>Release</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Debug|Win32">
+      <Configuration>Debug</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|x64">
+      <Configuration>Release</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Debug|x64">
+      <Configuration>Debug</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+  </ItemGroup>
+  <ItemGroup>
+    <Text Include="LICENSE_1_0.txt" />
+  </ItemGroup>
+  <PropertyGroup Label="Globals">
+    <ProjectGuid>{3B471441-8DD5-4867-B6A9-909474E9E844}</ProjectGuid>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
+  <PropertyGroup Label="Configuration">
+    <ConfigurationType>StaticLibrary</ConfigurationType>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+  <ImportGroup Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+    <Import Project="$(SolutionDir)SolutionRoot.props" Condition="exists('$(SolutionDir)SolutionRoot.props')" />
+  </ImportGroup>
+  <ImportGroup Label="ExtensionSettings">
+    <Import Project="$(SolutionDir)Libraries\MSBuildDefSettings\Qt.props" Condition="exists('$(SolutionDir)Libraries\MSBuildDefSettings\Qt.props')" />
+  </ImportGroup>
+  <PropertyGroup Label="UserMacros" />
+  <PropertyGroup />
+  <ItemDefinitionGroup>
+    <ClCompile>
+      <AdditionalIncludeDirectories>$(ProjectDir)include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+    </ClCompile>
+  </ItemDefinitionGroup>
+  <ItemGroup>
+    <ClCompile Include="src\BasicHeaderControlModelHelper.cpp" />
+    <ClCompile Include="src\Delegates\SearchDelegate.cpp" />
+    <ClCompile Include="src\Delegates\StyledDelegate.cpp" />
+    <ClCompile Include="src\DrawText.cpp" />
+    <ClCompile Include="src\ExceptionError.cpp" />
+    <ClCompile Include="src\AbstractConnectionController.cpp" />
+    <ClCompile Include="src\Delegates\CheckBoxDelegate.cpp" />
+    <ClCompile Include="src\DelayedExecutionTimer.cpp" />
+    <ClCompile Include="src\Delegates\StyledParts.cpp" />
+    <ClCompile Include="src\Delegates\DrawFormattedText.cpp" />
+    <ClCompile Include="src\Delegates\FormattedItemDelegate.cpp" />
+    <ClCompile Include="src\DynamicTable.cpp" />
+    <ClCompile Include="src\HeaderConfigurationWidget.cpp" />
+    <ClCompile Include="src\MdiModel.cpp" />
+    <ClCompile Include="src\TableViewUtils.cpp" />
+    <ClCompile Include="src\ToolsBase.cpp" />
+    <ClCompile Include="src\StandardItemModel.cpp" />
+    <ClCompile Include="src\ListModel.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <QtMOCCompile Include="include\QtTools\BasicHeaderControlModelHelper.hqt" />
+    <QtMOCCompile Include="include\QtTools\DelayedExecutionTimer.hqt" />
+    <QtMOCCompile Include="include\QtTools\DynamicTable.hqt" />
+    <QtMOCCompile Include="include\QtTools\HeaderConfigurationWidget.hqt" />
+    <QtMOCCompile Include="include\QtTools\MdiModel.hqt" />
+    <QtMOCCompile Include="include\QtTools\StandardItemModel.hqt" />
+    <QtMOCCompile Include="include\QtTools\ListModel.hqt" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="include\QtTools\BasicHeaderControlModel.hpp" />
+    <ClInclude Include="include\QtTools\ConnectionController.hpp" />
+    <ClInclude Include="include\QtTools\AbstractConnectionController.hpp" />
+    <ClInclude Include="include\QtTools\DateUtils.hpp" />
+    <ClInclude Include="include\QtTools\Delegates\SearchDelegate.hpp" />
+    <ClInclude Include="include\QtTools\Delegates\StyledDelegate.hpp" />
+    <ClInclude Include="include\QtTools\DrawText.hpp" />
+    <ClInclude Include="include\QtTools\ExceptionError.hpp" />
+    <ClInclude Include="include\QtTools\HeaderControlModel.hqt" />    
+    <ClInclude Include="include\QtTools\TableViewUtils.hpp" />
+    <ClInclude Include="include\QtTools\ToggleChecked.hpp" />
+    <ClInclude Include="include\QtTools\Delegates\AccqireStyle.hpp" />
+    <ClInclude Include="include\QtTools\Delegates\CheckBoxDelegate.hpp" />
+    <ClInclude Include="include\QtTools\Delegates\FormattedItemDelegate.hpp" />
+    <ClInclude Include="include\QtTools\Delegates\StyledParts.hpp" />
+    <ClInclude Include="include\QtTools\Delegates\DrawFormattedText.hpp" />
+    <ClInclude Include="include\QtTools\StringInterpolation.hpp" />
+    <ClInclude Include="include\QtTools\ToolsBase.hpp" />
+    <ClInclude Include="include\QtTools\HeaderSectionInfo.hpp" />
+    <ClInclude Include="include\QtTools\ViewModelBase.hpp" />
+  </ItemGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+  <ImportGroup Label="ExtensionTargets">
+  </ImportGroup>
+</Project>

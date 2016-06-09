@@ -1,0 +1,433 @@
+#pragma once
+#include <algorithm>
+#include <functional>
+#include <ext/zip_iterator.hpp>
+#include <ext/algorithm/slide.hpp>
+
+#include <QtCore/QVector>
+#include <QtCore/QAbstractItemModel>
+#include <QtCore/QMimeData>
+#include <QtCore/QString>
+#include <QtCore/QStringList>
+#include <QtTools/ToolsBase.hpp>
+
+namespace QtTools
+{
+	/// вспомогательный класс ListModel
+	class ListModel_MimeData : public QMimeData
+	{
+		Q_OBJECT
+
+	public:
+		// "application/x-ListModel-indexes"
+		static const QString MimeFormat;
+		static const QStringList MimeFormats;
+
+		QModelIndexList elements;
+
+	public:
+		ListModel_MimeData() = default;
+		ListModel_MimeData(QModelIndexList elements) : elements(std::move(elements)) {}
+
+		QStringList formats() const override;
+		bool hasFormat(const QString & mimetype) const override;
+	};
+
+
+	/// базовый вспомогательный класс для ListModel, тут шаблонно-независимый код
+	class ListModelBase : public QAbstractListModel
+	{
+	protected:
+
+		/// данные методы реализуются наследником и вызываются из dropMimeData.
+		/// drop event может произойти между элементами и на элемент,
+		/// так же действие может быть Move/Copy. 
+		/// В зависимости от этих условий вызывается одна из функций.
+		/// 
+		/// QAbstractListModel в случае onto drop переписывает элементы,
+		/// стандартная реализация ListModel поступает так же, 
+		/// но при этом flags НЕ возвращает Qt::ItemIsDropEnabled.
+		/// 
+		/// NOTE: модель никогда не должна удалять строки самостоятельно в случае MoveAction,
+		///       Qt View делает это автоматически всегда после события drop.
+
+		virtual bool DndMoveBefore(QAbstractItemModel & model, const int * idx_first, const int * idx_last, int destRow) = 0;
+		virtual bool DndCopyBefore(QAbstractItemModel & model, const int * idx_first, const int * idx_last, int destRow) = 0;
+		virtual bool DndMoveOnto(QAbstractItemModel & model, const int * idx_first, const int * idx_last, int destRow) = 0;
+		virtual bool DndCopyOnto(QAbstractItemModel & model, const int * idx_first, const int * idx_last, int destRow) = 0;
+
+	public:
+		// drag&drop support
+		Qt::ItemFlags flags(const QModelIndex & index) const override;		
+		Qt::DropActions supportedDropActions() const override;
+		QStringList mimeTypes() const override;
+		QMimeData * mimeData(const QModelIndexList & indexes) const override;
+
+		bool canDropMimeData(const QMimeData * data, Qt::DropAction action,
+		                     int row, int column, const QModelIndex & parent) const override;
+		bool dropMimeData(const QMimeData * data, Qt::DropAction action,
+		                  int row, int column, const QModelIndex & parent) override;
+
+	public:
+		ListModelBase(QObject * parent) 
+			: QAbstractListModel(parent) {}
+	};
+
+
+	/// Реализация модели списка, подобно QStringListModel, только для любого типа.
+	/// @Param Type тип элементов, должен быть совместимым с QVariant и Container
+	/// @Param Container std::vector совместимый контейнер, например QVector
+	template <class Type, template <class...> class Container = QVector>
+	class ListModel : public ListModelBase
+	{
+		typedef ListModel           self_type;
+		typedef ListModelBase       base_type;
+
+	public:
+		typedef Type                  value_type;
+		typedef Container<value_type> container_type;
+		typedef Container<int>        int_vector;
+
+	protected:
+		container_type m_data;
+
+	public:
+		const container_type & listData() const { return m_data; }
+		void setListData(container_type values);
+
+		int rowCount(const QModelIndex & parent = QModelIndex()) const override;
+
+		QVariant data(const QModelIndex & index, int role = Qt::DisplayRole) const override;
+		bool setData(const QModelIndex & index, const QVariant & value, int role = Qt::EditRole) override;
+		void sort(int column, Qt::SortOrder order = Qt::AscendingOrder) override;
+
+		bool insertRows(int row, int count, const QModelIndex & parent = QModelIndex()) override;
+		bool removeRows(int row, int count, const QModelIndex & parent = QModelIndex()) override;
+		bool moveRows(const QModelIndex & sourceParent, int sourceRow, int count,
+		              const QModelIndex & destinationParent, int destinationChild) override;
+
+	protected: // ListModelBase
+		virtual bool DndMoveBefore(QAbstractItemModel & model, const int * idx_first, const int * idx_last, int destRow) override;
+		virtual bool DndCopyBefore(QAbstractItemModel & model, const int * idx_first, const int * idx_last, int destRow) override;
+		virtual bool DndMoveOnto(QAbstractItemModel & model, const int * idx_first, const int * idx_last, int destRow) override;
+		virtual bool DndCopyOnto(QAbstractItemModel & model, const int * idx_first, const int * idx_last, int destRow) override;
+
+		// move from same type
+		bool DndMoveBefore(self_type & model, const int * idx_first, const int * idx_last, int destRow);
+		bool DndCopyBefore(self_type & model, const int * idx_first, const int * idx_last, int destRow);
+		bool DndMoveOnto(self_type & model, const int * idx_first, const int * idx_last, int destRow);
+		bool DndCopyOnto(self_type & model, const int * idx_first, const int * idx_last, int destRow);
+
+	public:
+		explicit ListModel(QObject * parent = nullptr);
+		explicit ListModel(container_type values, QObject * parent = nullptr);
+		
+		ListModel(std::initializer_list<value_type> ilist)
+			: ListModel(container_type(ilist), nullptr) {}
+
+		Q_DISABLE_COPY(ListModel);
+	};
+
+
+	/************************************************************************/
+	/*                implementation                                        */
+	/************************************************************************/
+	template <class Type, template <class...> class Container>
+	void ListModel<Type, Container>::setListData(container_type values)
+	{
+		Q_EMIT beginResetModel();
+		m_data = std::move(values);
+		Q_EMIT endResetModel();
+	}
+
+	template <class Type, template <class...> class Container>
+	int ListModel<Type, Container>::rowCount(const QModelIndex & parent /* = QModelIndex() */) const
+	{
+		return qint(m_data.size());
+	}
+
+	template <class Type, template <class...> class Container>
+	QVariant ListModel<Type, Container>::data(const QModelIndex & index, int role /* = Qt::DisplayRole */) const
+	{
+		int r = index.row();
+		if (r < 0 || r >= m_data.size()) return QVariant();
+
+		switch (role)
+		{
+			case Qt::DisplayRole:
+			case Qt::EditRole:      return QVariant::fromValue(m_data[r]);
+			default:                return QVariant();
+		}
+	}
+
+	template <class Type, template <class...> class Container>
+	bool ListModel<Type, Container>::setData(const QModelIndex & index, const QVariant & value, int role /* = Qt::EditRole */)
+	{
+		int r = index.row();
+		if (r < 0 || r > m_data.size()) return false;
+
+		switch (role)
+		{
+			case Qt::DisplayRole:
+			case Qt::EditRole:
+				if (!value.canConvert<value_type>()) return false;
+				m_data[r] = qvariant_cast<value_type>(value);
+				Q_EMIT dataChanged(index, index, {role});
+				return true;
+			
+			default: return false;
+		}
+	}
+
+	template <class Type, template <class...> class Container>
+	void ListModel<Type, Container>::sort(int column, Qt::SortOrder order /* = Qt::AscendingOrder */)
+	{
+		Q_EMIT layoutAboutToBeChanged({}, QAbstractItemModel::VerticalSortHint);
+		
+		int_vector index_array(m_data.size(), -1);
+		for (auto & index : persistentIndexList())
+			index_array[index.row()] = index.row();
+		
+		auto first = ext::make_zip_iterator(m_data.begin(), index_array.begin());
+		auto last = ext::make_zip_iterator(m_data.end(), index_array.end());
+
+		if (order == Qt::AscendingOrder)
+			std::sort(first, last, [](auto && v1, auto && v2) { return std::get<0>(v1) < std::get<0>(v2); });
+		else
+			std::sort(first, last, [](auto && v1, auto && v2) { return std::get<0>(v1) > std::get<0>(v2); });
+			
+		int i = 0;
+		for (int idx : index_array)
+		{
+			if (idx != -1) 
+				changePersistentIndex(index(idx), index(i));
+			++i;
+		}
+
+		Q_EMIT layoutChanged({}, QAbstractItemModel::VerticalSortHint);
+	}
+
+	template <class Type, template <class...> class Container>
+	bool ListModel<Type, Container>::insertRows(int row, int count, const QModelIndex & parent /* = QModelIndex() */)
+	{
+		if (count <= 0 || row < 0 || row > m_data.size()) return false;
+
+		beginInsertRows(parent, row, row + count - 1);
+		auto first = m_data.begin() + row;
+		m_data.insert(first, count, value_type());
+		endInsertRows();
+		return true;
+	}
+
+	template <class Type, template <class...> class Container>
+	bool ListModel<Type, Container>::removeRows(int row, int count, const QModelIndex & parent /* = QModelIndex() */)
+	{
+		if (count <= 0 || row < 0 || row > m_data.size()) return false;
+
+		beginRemoveRows(parent, row, row + count - 1);
+		auto first = m_data.begin() + row;
+		auto last = first + count;
+		m_data.erase(first, last);
+		endRemoveRows();
+		return true;
+	}
+
+	template <class Type, template <class...> class Container>
+	bool ListModel<Type, Container>::moveRows(const QModelIndex & sourceParent, int sourceRow, int count,
+	                                          const QModelIndex & destinationParent, int destinationChild)
+	{
+		bool allowed = beginMoveRows(sourceParent, sourceRow, sourceRow + count - 1, destinationParent, destinationChild);
+		if (!allowed) return false;
+
+		auto first = m_data.begin() + sourceRow;
+		auto last = first + count;
+		auto newpos = m_data.begin() + destinationChild;
+		ext::slide(first, last, newpos);
+
+		endMoveRows();
+		return true;
+	}
+
+	/************************************************************************/
+	/*       Drag And Drop implementation                                   */
+	/************************************************************************/
+	template <class Type, template <class...> class Container>
+	bool ListModel<Type, Container>::DndMoveBefore(self_type & model, const int * idx_first, const int * idx_last, int destRow)
+	{
+		QModelIndex parent;
+		int count = static_cast<int>(idx_last - idx_first);
+
+		beginInsertRows(parent, destRow, destRow + count - 1);
+
+		m_data.insert(m_data.begin() + destRow, count, value_type());
+		auto out = m_data.begin() + destRow;
+
+		for (; idx_first != idx_last; ++idx_first)
+		{
+			int idx = *idx_first;
+			if (idx >= destRow) idx += count;
+			*out = std::move(model.m_data[idx]);
+			++out;
+		}
+
+		endInsertRows();
+		return true;
+
+	}
+
+	template <class Type, template <class...> class Container>
+	bool ListModel<Type, Container>::DndCopyBefore(self_type & model, const int * idx_first, const int * idx_last, int destRow)
+	{
+		QModelIndex parent;
+		int count = static_cast<int>(idx_last - idx_first);
+
+		beginInsertRows(parent, destRow, destRow + count - 1);
+
+		m_data.insert(m_data.begin() + destRow, count, value_type());
+		auto out = m_data.begin() + destRow;
+		
+		for (; idx_first != idx_last; ++idx_first)
+		{
+			int idx = *idx_first;
+			if (idx >= destRow) idx += count;
+			*out = m_data[idx];
+			++out;
+		}
+
+		endInsertRows();
+		return true;
+	}
+
+	template <class Type, template <class...> class Container>
+	bool ListModel<Type, Container>::DndMoveBefore(QAbstractItemModel & model, const int * idx_first, const int * idx_last, int destRow)
+	{
+		if (auto * self = dynamic_cast<self_type *>(&model))
+			return DndMoveBefore(*self, idx_first, idx_last, destRow);
+
+		QModelIndex parent;
+		int count = static_cast<int>(idx_last - idx_first);
+		
+		beginInsertRows(parent, destRow, destRow + count - 1);
+		
+		m_data.insert(m_data.begin() + destRow, count, value_type());
+		auto out = m_data.begin() + destRow;
+
+		for (; idx_first != idx_last; ++idx_first)
+		{
+			int idx = *idx_first;
+			if (idx >= destRow) idx += count;
+			*out = qvariant_cast<value_type>(model.index(idx, 0, parent).data(Qt::DisplayRole));
+			++out;
+		}
+
+		endInsertRows();
+		return true;
+	}
+
+	template <class Type, template <class...> class Container>
+	bool ListModel<Type, Container>::DndCopyBefore(QAbstractItemModel & model, const int * idx_first, const int * idx_last, int destRow)
+	{
+		if (auto * self = dynamic_cast<self_type *>(&model))
+			return DndCopyBefore(*self, idx_first, idx_last, destRow);
+
+		QModelIndex parent;
+		int count = static_cast<int>(idx_last - idx_first);
+
+		beginInsertRows(parent, destRow, destRow + count - 1);
+
+		m_data.insert(m_data.begin() + destRow, count, value_type());
+		auto out = m_data.begin() + destRow;
+
+		for (; idx_first != idx_last; ++idx_first)
+		{
+			int idx = *idx_first;
+			if (idx >= destRow) idx += count;
+			*out = qvariant_cast<value_type>(model.index(idx, 0, parent).data(Qt::DisplayRole));
+			++out;
+		}
+
+		endInsertRows();
+		return true;
+	}
+
+	template <class Type, template <class...> class Container>
+	bool ListModel<Type, Container>::DndMoveOnto(self_type & model, const int * idx_first, const int * idx_last, int destRow)
+	{
+		QModelIndex parent;
+		int min = *idx_first;
+
+		for (; idx_first != idx_last; ++idx_first)
+		{
+			int idx = *idx_first;
+			int offset = idx - min;
+			m_data[destRow + offset] = std::move(model.m_data[idx]);
+		}
+
+		return true;
+	}
+
+	template <class Type, template <class...> class Container>
+	bool ListModel<Type, Container>::DndCopyOnto(self_type & model, const int * idx_first, const int * idx_last, int destRow)
+	{
+		QModelIndex parent;
+		int min = *idx_first;
+
+		for (; idx_first != idx_last; ++idx_first)
+		{
+			int idx = *idx_first;
+			int offset = idx - min;
+			m_data[destRow + offset] = model.m_data[idx];
+		}
+
+		return true;
+	}
+
+	template <class Type, template <class...> class Container>
+	bool ListModel<Type, Container>::DndMoveOnto(QAbstractItemModel & model, const int * idx_first, const int * idx_last, int destRow)
+	{
+		if (auto * self = dynamic_cast<self_type *>(&model))
+			return DndMoveOnto(*self, idx_first, idx_last, destRow);
+
+		QModelIndex parent;
+		int min = *idx_first;
+
+		for (; idx_first != idx_last; ++idx_first)
+		{
+			int idx = *idx_first;
+			int offset = idx - min;
+			m_data[destRow + offset] = qvariant_cast<value_type>(model.index(idx, 0, parent).data(Qt::DisplayRole));
+		}
+
+		return true;
+	}
+
+	template <class Type, template <class...> class Container>
+	bool ListModel<Type, Container>::DndCopyOnto(QAbstractItemModel & model, const int * idx_first, const int * idx_last, int destRow)
+	{
+		if (auto * self = dynamic_cast<self_type *>(&model))
+			return DndCopyOnto(*self, idx_first, idx_last, destRow);
+
+		QModelIndex parent;
+		int min = *idx_first;
+
+		for (; idx_first != idx_last; ++idx_first)
+		{
+			int idx = *idx_first;
+			int offset = idx - min;
+			m_data[destRow + offset] = qvariant_cast<value_type>(model.index(idx, 0, parent).data(Qt::DisplayRole));
+		}
+
+		return true;
+	}
+
+
+
+	template <class Type, template <class...> class Container>
+	ListModel<Type, Container>::ListModel(QObject * parent /* = nullptr */)
+		: base_type(parent) {}
+
+	template <class Type, template <class...> class Container>
+	ListModel<Type, Container>::ListModel(container_type values, QObject * parent /* = nullptr */)
+		: base_type(parent), m_data(std::move(values)) {}
+
+}

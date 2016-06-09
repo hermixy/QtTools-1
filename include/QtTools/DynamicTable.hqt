@@ -1,0 +1,76 @@
+#pragma once
+
+#include <QtCore/QAbstractItemModel>
+#include <QtWidgets/QAbstractItemView>
+#include <QtWidgets/QHBoxLayout>
+#include <QtWidgets/QVBoxLayout>
+#include <QtWidgets/QDialogButtonBox>
+#include <QtWidgets/QToolButton>
+
+namespace QtTools
+{
+	/// каркас динамической таблицы
+	/// она имеет вид:
+	/// ****************************************************************
+	///                     <add item> <del item> <up item> <down item> 
+	///                  <QAbstactItemView control>
+	/// <reset>                                   <apply> <ok> <cancel>
+	/// ****************************************************************
+	/// 
+	/// можно использовать как отдельный объект, передав модель
+	/// или же унаследовать этот класс и установить m_view, m_model
+	/// 
+	/// генерирует сигналы
+	/// * Apply() - вызывается когда пользователь нажимает Apply/Ok
+	/// * Reset() - вызывается когда пользователь нажимает Reset
+	/// в конструкторе принимает модель, модель должна реализовывать методы:
+	///   insertRow, removeRow, moveRow, они используются обработчиками кнопок
+	///   так же модель должна быть editable
+	/// 
+	/// опционально пользователь можно перегрузить:
+	/// * OnNewItem
+	/// * OnDeleteItem
+	/// * OnUpItem
+	/// * OnDownItem
+	/// * OnDialogButtonClick
+
+	class DynamicTable : public QWidget
+	{
+		Q_OBJECT;
+
+	protected:
+		QVBoxLayout * m_verticalLayout;
+		QHBoxLayout * m_horizontalLayout;
+		QSpacerItem * m_horizontalSpacer;
+		QToolButton * m_newEntryButton;
+		QToolButton * m_deleteEntryButton;
+		QToolButton * m_upEntryButton;
+		QToolButton * m_downEntryButton;
+		QDialogButtonBox * m_buttonBox;
+
+		void retranslateUi();
+		void setupUi();
+		void connectSignals();
+
+	protected:
+		QAbstractItemView * m_view;
+		QAbstractItemModel * m_model;
+
+	protected:
+		virtual void OnNewItem();
+		virtual void OnDeleteItem();
+		virtual void OnUpItem();
+		virtual void OnDownItem();
+		virtual void OnDialogButtonClick(QAbstractButton * button);
+
+		void Init();
+		DynamicTable(QWidget * parent = nullptr);
+	public:
+		DynamicTable(QAbstractItemModel * model, QWidget * parent = nullptr);
+
+	Q_SIGNALS:
+		void Apply();
+		void Reset();
+		void Closed();
+	};
+}

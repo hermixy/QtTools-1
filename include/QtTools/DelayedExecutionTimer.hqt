@@ -1,0 +1,30 @@
+#pragma once
+#include <QtCore/QObject>
+#include <QtCore/QTimer>
+
+namespace QtTools
+{
+	class DelayedExecutionTimer : public QObject
+	{
+		Q_OBJECT;
+
+		QTimer * m_maximumTimer = new QTimer {this};
+		QTimer * m_minimumTimer = new QTimer {this};
+
+		int m_minimumTimeout = 0;
+		int m_maximumTimeout = 0;
+
+	public:
+		DelayedExecutionTimer(int minimumTimeout = 0, int maximumTimeout = 0, QObject * parent = nullptr);
+
+		void SetMinimumTimeout(int timeout) { m_minimumTimeout = timeout; }
+		void SetMaximumTimeout(int timeout) { m_maximumTimeout = timeout; }
+
+	public Q_SLOTS:
+		void OnTriggered();
+		void OnTimeout();
+	
+	Q_SIGNALS:
+		void Trigger();
+	};
+}

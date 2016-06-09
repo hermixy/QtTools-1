@@ -1,0 +1,24 @@
+#pragma once
+#include <QtTools/BasicHeaderControlModel.hpp>
+#include <QtTools/HeaderSectionInfo.hpp>
+
+namespace QtTools
+{
+	struct HeaderSectionInfoTraits
+	{
+		typedef HeaderSectionInfo section_type;
+
+		static const QString & get_code(const section_type & s) { return s.code; }
+		static            void set_code(section_type & s, const QString & code) { s.code = code; }
+
+		static  int get_width(const section_type & s) { return s.width; }
+		static void set_width(section_type & s, int width) { s.width = width; }
+
+		static bool get_hidden(const section_type & s) { return s.hidden; }
+		static void set_hidden(section_type & s, bool hidden) { s.hidden = hidden; }
+	};
+
+	typedef BasicHeaderControlModel<
+		HeaderSectionInfoTraits
+	> HeaderControlModel;
+}

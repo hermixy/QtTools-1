@@ -1,0 +1,62 @@
+#pragma once
+#include <QtCore/QList>
+#include <QtCore/QAbstractItemModel>
+#include <QtWidgets/QWidget>
+
+QT_BEGIN_NAMESPACE
+class QMdiArea;
+class QMdiSubWindow;
+class QAction;
+class QMenu;
+QT_END_NAMESPACE
+
+namespace QtTools
+{
+	class MdiModel : public QAbstractListModel
+	{
+		Q_OBJECT;
+
+	private:
+		QMdiArea * m_mdiArea;
+		QMenu * m_menu;
+		QList<QMdiSubWindow *> m_subwindows;
+		QList<QAction *> m_actions;
+
+		QString m_colTitle;
+		QAction * m_separator = nullptr;
+		const bool m_addSeparator = true;
+
+	private:
+		void AddAction(QMdiSubWindow * subwindow);
+
+	private Q_SLOTS:
+		/// удаляет зарегистрированное окно из меню
+		/// хендл окна береться из QObject::sender()
+		void UnregisterMdiWindow();
+		/// синхронизирует заголовок окна с соответствующем ему пункт в меню
+		void SynchronizeMdiWindowTitle(const QString & title);
+
+	public Q_SLOTS:
+		/// регистрирует создание mdi окна и добавляет его в список окон(меню приложения)
+		void RegisterMdiWindow(QMdiSubWindow * window);
+		/// добавляет wgt в MdiArea и регистрирует полученный subwindow
+		QMdiSubWindow * AddSubWindow(QWidget * wgt, Qt::WindowFlags flags = 0);
+
+	public:
+		QMdiSubWindow * GetSubWindow(int idx) const;
+		QAction * GetAction(int idx) const;
+
+		void TrackMenu(QMenu * menu);
+		void DetachMenu();
+
+	public:
+		int rowCount(const QModelIndex & parent = QModelIndex()) const override;
+		QVariant data(const QModelIndex & idx, int role = Qt::DisplayRole) const override;
+		QVariant headerData(int section, Qt::Orientation orientation, int role /* = Qt::DisplayRole */) const override;
+
+	public:
+		MdiModel(QMdiArea & mdiArea, QMenu * menu, QObject * parent = nullptr);
+		~MdiModel() Q_DECL_NOEXCEPT;
+	};
+
+}
