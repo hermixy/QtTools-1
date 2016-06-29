@@ -69,7 +69,6 @@ namespace QtTools
 		typedef typename traits_type::section_type section_type;
 
 		typedef QString code_type;
-		typedef QStringList codelist_type;
 		typedef QtTools::QtHasher code_hasher;
 		typedef std::equal_to<> code_equal;
 
@@ -169,9 +168,13 @@ namespace QtTools
 		virtual code_type CodeFromLogicalIndex(int logicalIndex) const
 		{ return m_headerModel->headerData(logicalIndex, Qt::Horizontal, m_codeRole).toString(); }
 
-		BySeqViewConstIterator ToSeqIterator(ByCodeViewConstIterator codeit) const { return m_sectionContainer.template project<BySeq>(codeit); }
+		BySeqViewConstIterator ToSeqIterator(ByCodeViewConstIterator codeit) const
+		{ return m_sectionContainer.template project<BySeq>(codeit); }
+		
 		/// получаем внутренний индекс по итератору
-		int IndexFromIt(BySeqViewConstIterator seqit) const { return seqit - m_sectionContainer.begin(); }
+		int IndexFromIt(BySeqViewConstIterator seqit) const
+		{ return seqit - m_sectionContainer.begin(); }
+		
 		/// получает визуальный индекс по коду
 		int VisualIndexFromIt(BySeqViewConstIterator seqit) const
 		{
@@ -234,10 +237,9 @@ namespace QtTools
 		/// перемещает строки внутри модели и уведомляет QHeaderView, фактически реализация moveRows
 		bool MoveRows(int sourceRow, int count, int destinationChild);
 		/// выполняет перемещение колонок, учитывает есть ли отслеживаемый QHeaderView,
-		/// присутствует ли колонка с заданным кодом в QHeaderView
+		/// sections - указатели в m_sectionContainer на перемещаемые секции
 		/// destinationChild - номер строки, перед которой вставляются элементы, как в QAbstractItemModel::moveRows
-		template <class CodeRange>
-		void MoveSections(const CodeRange & codes, int destinationChild);
+		void MoveSections(const QVector<const void *> & sections, int destinationChild);
 
 		/// заполняет секцию данными из QHeaderView
 		void InitSectionFromHeader(section_info & info, int logicalIndex);
@@ -437,23 +439,24 @@ namespace QtTools
 			auto first = m_sectionContainer.begin() + sourceRow;
 			auto last = m_sectionContainer.begin() + sourceRow + count;
 
-			codelist_type codes;
-			std::transform(first, last, std::back_inserter(codes), self_type::get_code);
+			QVector<const void *> sections;
+			sections.resize(count);
+			for (auto out = sections.begin(); first != last; ++first, ++out)
+				*out = &*first;
 
-			MoveSections(codes, destinationChild);
+			MoveSections(sections, destinationChild);
 			return true;
 		}
 	}
 
 	template <class SectionInfoTraits, class BaseModel>
-	template <class CodeRange>
-	void BasicHeaderControlModel<SectionInfoTraits, BaseModel>::MoveSections(const CodeRange & codes, int destinationChild)
+	void BasicHeaderControlModel<SectionInfoTraits, BaseModel>::MoveSections(const QVector<const void *> & sections, int destinationChild)
 	{
-		auto & codeview = m_sectionContainer.template get<ByCode>();
-		for (const auto & code : codes)
+		auto & seqview = m_sectionContainer.template get<BySeq>();
+		for (const void * ptr : sections)
 		{
-			auto it = codeview.find(code);
-			auto seqit = ToSeqIterator(it);
+			const section_info & seqref = *static_cast<const section_info *>(ptr);
+			auto seqit = seqview.iterator_to(seqref);
 			int sourceRow = IndexFromIt(seqit);
 
 			MoveSection(seqit, destinationChild);
@@ -594,9 +597,12 @@ namespace QtTools
 			return nullptr;
 		
 		QScopedPointer<CodeListMime> data {new CodeListMime};
-		QStringList & codes = data->codes;
+		data->model = this;
+		auto & sections = data->sections;
+
+		sections.reserve(indexes.size());
 		for (const QModelIndex & idx : indexes)
-			codes.append(get_code(m_sectionContainer[idx.row()]));
+			sections.push_back(&m_sectionContainer[idx.row()]);
 		
 		return data.take();
 	}
@@ -605,7 +611,10 @@ namespace QtTools
 	bool BasicHeaderControlModel<SectionInfoTraits, BaseModel>::canDropMimeData(const QMimeData * data, Qt::DropAction action,
 	                                                                            int row, int column, const QModelIndex & parent) const
 	{
-		return action == Qt::MoveAction && qobject_cast<const CodeListMime *>(data);
+		const CodeListMime * cmime;
+		return action == Qt::MoveAction && 
+			(cmime = qobject_cast<const CodeListMime *>(data)) && 
+			cmime->model == this; // allow only internal move
 	}
 
 	template <class SectionInfoTraits, class BaseModel>
@@ -618,12 +627,12 @@ namespace QtTools
 		//  * или скидываем на элемент и тогда parent его идентифицирует,
 		//     в нашем случае невозможно, поскольку мы запретили это методом flags
 		//  * или скидываем после последнего элемента
-		const codelist_type & codes = qobject_cast<const CodeListMime*>(data)->codes;
+		const QVector<const void *> & sections = qobject_cast<const CodeListMime *>(data)->sections;
 
 		if (row == -1) // row == -1 если мы скидываем ниже последнего item'а
 			row = rowCount();
-
-		MoveSections(codes, row);
+		
+		MoveSections(sections, row);
 		return true;
 	}
 

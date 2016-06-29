@@ -1,5 +1,5 @@
 #include <QtCore/QObject>
-#include <QtCore/QStringList>
+#include <QtCore/QVector>
 #include <QtCore/QMimeData>
 
 /// вспомогательный класс для BasicHeaderControlModel.
@@ -24,13 +24,18 @@ public:
 	// "application/x-BasicHeaderControlModel-ColumnCodes"
 	static const QString MimeCodeFormat; 
 	static const QStringList MimeFormats;
+	
+	// codes transfered via this drag&drop operation, void * to simplify adn not depend on template type
+	QVector<const void *> sections;
 
-	// codes transfered via this drag&drop operation
-	QStringList codes;
+	// pointer to a model, which started this operation. 
+	// To ensure internal only move
+	const void * model = nullptr;
 
 public:
 	CodeListMime() = default;
-	CodeListMime(QStringList codes) : codes(std::move(codes)) {}
+	CodeListMime(QVector<const void *> sections, const void * model)
+		: sections(std::move(sections)), model(model) {}
 
 	QStringList formats() const override;
 	bool hasFormat(const QString & mimetype) const override;
