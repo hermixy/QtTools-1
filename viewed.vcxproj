@@ -52,7 +52,7 @@
     <ClInclude Include="include\viewed\indirect_functor.hpp" />
     <ClInclude Include="include\viewed\selectable_sfview_base.hpp" />
     <ClInclude Include="include\viewed\sfview_base.hpp" />
-    <ClInclude Include="include\viewed\signal_types.hpp" />
+    <ClInclude Include="include\viewed\signal_traits.hpp" />
     <ClInclude Include="include\viewed\view_base.hpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

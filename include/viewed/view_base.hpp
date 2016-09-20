@@ -4,6 +4,7 @@
 
 #include <boost/iterator/indirect_iterator.hpp>
 #include <boost/range/algorithm_ext.hpp>
+#include <boost/range/adaptor/transformed.hpp>
 #include <boost/signals2/connection.hpp>
 
 namespace viewed
@@ -73,8 +74,9 @@ namespace viewed
 		typedef const_pointer                            pointer;
 
 	protected:
-		typedef std::vector<const value_type *> store_type;
-		typedef typename container_type::signal_range_type signal_range_type;
+		typedef typename container_type::signal_range_type   signal_range_type;
+		typedef typename container_type::scoped_connection   scoped_connection;
+		typedef std::vector<const value_type *>              store_type;
 
 	public:
 		typedef typename store_type::size_type           size_type;
@@ -85,9 +87,9 @@ namespace viewed
 		store_type m_store; // view store, can be used by derived classes
 
 		/// raii connections
-		boost::signals2::scoped_connection m_clear_con;
-		boost::signals2::scoped_connection m_upsert_con;
-		boost::signals2::scoped_connection m_erase_con;
+		scoped_connection m_clear_con;
+		scoped_connection m_upsert_con;
+		scoped_connection m_erase_con;
 
 	public:
 		/// container interface

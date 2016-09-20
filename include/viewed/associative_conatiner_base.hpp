@@ -1,7 +1,7 @@
 #pragma once
 #include <algorithm>
 #include <iterator> // for back_inserter
-#include <viewed/signal_types.hpp>
+#include <viewed/signal_traits.hpp>
 #include <ext/try_reserve.hpp>
 
 namespace viewed
@@ -42,6 +42,40 @@ namespace viewed
 	};
 	*/
 
+	/*
+	/// signal_traits describes types used for communication between stores and views
+	struct signal_traits
+	{
+		/// random access range of valid pointers(at least at moment of call) to value_type
+		typedef implementation-defined signal_range_type;
+		
+		/// static functor/method for creating signal_range_type from some signal_store_type
+		static signal_range_type make_range(const Type ** first, const Type ** last);
+
+		/// signals should be boost::signals or compatible:
+		/// * connect call, connection, scoped_connection
+		/// * emission via call like: signal(args...)
+		
+		typedef implementation-defined connection;
+		typedef implementation-defined scoped_connection;
+
+		/// signal is emitted after new data is upserted into container, with 2 ranges of pointers. 
+		///  * 1st points to elements that were updated, sorted by pointer value
+		///  * 2nd to newly inserted, order is unspecified
+		///  signature: void(signal_range_type sorted_updated, signal_range_type inserted)
+		typedef implementation-defined upsert_signal_type;
+
+		/// signal is emitted before data is erased from container, 
+		/// with range of pointers to elements to erase, sorted by pointer value
+		/// signature: void(signal_range_type erased), 
+		typedef implementation-defined erase_signal_type;
+
+		/// signal is emitted before container is cleared.
+		/// signature: void(), 
+		typedef implementation-defined clear_signal_type;
+	}
+	*/
+
 	/// Base container class build on top of some defined by traits associative container
 	/// You are expected to inherit it and add more functional.
 	/// Generic container with stl compatible interface
@@ -57,18 +91,18 @@ namespace viewed
 	/// @Param Element type
 	/// @Param Traits traits class describes various aspects of container,
 	///        see description above, also see hash_container_traits and ordered_container_traits for example
-	/// TODO: make signal_types a traits parameter
 	template <
 		class Type,
-		class Traits
+		class Traits,
+		class SignalTraits = default_signal_traits<Type>
 	>
 	class associative_conatiner_base : protected Traits
 	{
 		typedef associative_conatiner_base<Type, Traits> self_type;
 	
 	protected:
-		typedef Traits traits_type;
-		typedef viewed::signal_types<Type> signal_types;
+		typedef Traits        traits_type;
+		typedef SignalTraits  signal_traits;
 	
 		typedef typename traits_type::main_store_type       main_store_type;
 		typedef typename traits_type::signal_store_type     signal_store_type;
@@ -90,10 +124,13 @@ namespace viewed
 
 	public:
 		/// forward signal types
-		typedef typename signal_types::signal_range_type   signal_range_type;
-		typedef typename signal_types::upsert_signal_type  upsert_signal_type;
-		typedef typename signal_types::erase_signal_type   erase_signal_type;
-		typedef typename signal_types::clear_signal_type   clear_signal_type;
+		typedef typename signal_traits::connection          connection;
+		typedef typename signal_traits::scoped_connection   scoped_connection;
+
+		typedef typename signal_traits::signal_range_type   signal_range_type;
+		typedef typename signal_traits::upsert_signal_type  upsert_signal_type;
+		typedef typename signal_traits::erase_signal_type   erase_signal_type;
+		typedef typename signal_traits::clear_signal_type   clear_signal_type;
 
 	protected:
 		main_store_type m_store;
@@ -117,9 +154,9 @@ namespace viewed
 		bool empty()     const noexcept { return m_store.empty(); }
 
 		/// signals
-		template <class... Args> boost::signals2::connection on_erase(Args && ... args)  { return m_erase_signal.connect(std::forward<Args>(args)...); }
-		template <class... Args> boost::signals2::connection on_upsert(Args && ... args) { return m_upsert_signal.connect(std::forward<Args>(args)...); }
-		template <class... Args> boost::signals2::connection on_clear(Args && ... args)  { return m_clear_signal.connect(std::forward<Args>(args)...); }
+		template <class... Args> connection on_erase(Args && ... args)  { return m_erase_signal.connect(std::forward<Args>(args)...); }
+		template <class... Args> connection on_upsert(Args && ... args) { return m_upsert_signal.connect(std::forward<Args>(args)...); }
+		template <class... Args> connection on_clear(Args && ... args)  { return m_clear_signal.connect(std::forward<Args>(args)...); }
 
 	protected:
 		/// finds and updates or appends elements from [first; last) into internal store m_store
@@ -168,9 +205,9 @@ namespace viewed
 		associative_conatiner_base & operator =(associative_conatiner_base && op) = default;
 	};
 
-	template <class Type, class Traits>
+	template <class Type, class Traits, class SignalTraits>
 	template <class SinglePassIterator>
-	void associative_conatiner_base<Type, Traits>::upsert_newrecs
+	void associative_conatiner_base<Type, Traits, SignalTraits>::upsert_newrecs
 		(SinglePassIterator first, SinglePassIterator last,
 		 signal_store_type & updated, signal_store_type & inserted)
 	{
@@ -195,53 +232,53 @@ namespace viewed
 		}
 	}
 
-	template <class Type, class Traits>
-	void associative_conatiner_base<Type, Traits>::erase_from_views(const_iterator first, const_iterator last)
+	template <class Type, class Traits, class SignalTraits>
+	void associative_conatiner_base<Type, Traits, SignalTraits>::erase_from_views(const_iterator first, const_iterator last)
 	{
 		signal_store_type todel;
 		std::transform(first, last, std::back_inserter(todel), traits_type::get_pointer);
 		std::sort(todel.begin(), todel.end());
 
-		auto rawRange = boost::make_iterator_range(todel.data(), todel.data() + todel.size());
+		auto rawRange = signal_traits::make_range(todel.data(), todel.data() + todel.size());
 		m_erase_signal(rawRange);
 	}
 
-	template <class Type, class Traits>
-	void associative_conatiner_base<Type, Traits>::clear()
+	template <class Type, class Traits, class SignalTraits>
+	void associative_conatiner_base<Type, Traits, SignalTraits>::clear()
 	{
 		m_clear_signal();
 		m_store.clear();
 	}
 
-	template <class Type, class Traits>
-	void associative_conatiner_base<Type, Traits>::merge_newdata_into_views(signal_store_type & updated, signal_store_type & inserted)
+	template <class Type, class Traits, class SignalTraits>
+	void associative_conatiner_base<Type, Traits, SignalTraits>::merge_newdata_into_views(signal_store_type & updated, signal_store_type & inserted)
 	{
 		std::sort(updated.begin(), updated.end());
-		auto urr = boost::make_iterator_range(updated.data(), updated.data() + updated.size());
-		auto irr = boost::make_iterator_range(inserted.data(), inserted.data() + inserted.size());
+		auto urr = signal_traits::make_range(updated.data(), updated.data() + updated.size());
+		auto irr = signal_traits::make_range(inserted.data(), inserted.data() + inserted.size());
 		m_upsert_signal(urr, irr);
 	}
 
 
-	template <class Type, class Traits>
-	auto associative_conatiner_base<Type, Traits>::erase(const_iterator first, const_iterator last) -> const_iterator
+	template <class Type, class Traits, class SignalTraits>
+	auto associative_conatiner_base<Type, Traits, SignalTraits>::erase(const_iterator first, const_iterator last) -> const_iterator
 	{
 		erase_from_views(first, last);
 		return m_store.erase(first, last);
 	}
 
-	template <class Type, class Traits>
+	template <class Type, class Traits, class SignalTraits>
 	template <class SinglePassIterator>
-	void associative_conatiner_base<Type, Traits>::upsert(SinglePassIterator first, SinglePassIterator last)
+	void associative_conatiner_base<Type, Traits, SignalTraits>::upsert(SinglePassIterator first, SinglePassIterator last)
 	{
 		signal_store_type updated, inserted;
 		upsert_newrecs(first, last, updated, inserted);
 		merge_newdata_into_views(updated, inserted);
 	}
 
-	template <class Type, class Traits>
+	template <class Type, class Traits, class SignalTraits>
 	template <class SinglePassIterator>
-	void associative_conatiner_base<Type, Traits>::assign(SinglePassIterator first, SinglePassIterator last)
+	void associative_conatiner_base<Type, Traits, SignalTraits>::assign(SinglePassIterator first, SinglePassIterator last)
 	{
 		clear();
 

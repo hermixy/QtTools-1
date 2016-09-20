@@ -2,10 +2,9 @@
 #include <viewed/view_base.hpp>
 #include <viewed/indirect_functor.hpp>
 
-#include <boost/algorithm/cxx11/copy_if.hpp>
 #include <boost/range/algorithm.hpp>
 #include <boost/range/algorithm_ext.hpp>
-#include <boost/range/adaptors.hpp>
+#include <boost/range/adaptor/transformed.hpp>
 
 #include <ext/varalgo/sorting_algo.hpp>
 #include <ext/varalgo/on_sorted_algo.hpp>
@@ -48,12 +47,15 @@ namespace viewed
 		using typename base_type::signal_range_type;
 		
 		using base_type::make_pointer;
-		using base_type::sorted_erase_records;
 		using base_type::m_owner;
+		using base_type::m_store;
+
+		typedef typename store_type::iterator       store_iterator;
+		typedef typename store_type::const_iterator store_const_iterator;
 
 		typedef std::pair <
-			typename store_type::const_iterator,
-			typename store_type::const_iterator
+			store_const_iterator,
+			store_const_iterator
 		> search_hint_type;
 
 	protected:
@@ -65,34 +67,31 @@ namespace viewed
 		filter_pred_type filter_pred() const { return m_filter_pred; }
 
 		/// reinitializes view from owner
-		void reinit_view() override;
+		virtual void reinit_view() override;
 
 	protected:
 		/// merges new records into view, preserving filter/sort order. stable
-		void merge_newdata(const signal_range_type & sorted_updated, const signal_range_type & inserted) override;
-		/// filters elements that are given in sorted_updated
-		void filter_update(const signal_range_type & sorted_updated);
+		virtual void merge_newdata(const signal_range_type & sorted_updated, const signal_range_type & inserted) override;
+		/// filters elements from m_store that are given in sorted_updated 
+		virtual void filter_update(const signal_range_type & sorted_updated);
 
 		/// sorts [first; last) with m_sort_pred, stable sort
-		template <class RandomAccessIterator>
-		void sort(RandomAccessIterator first, RandomAccessIterator last);
+		virtual void sort(store_iterator first, store_iterator last);
 
 		/// merges [middle, last) into [first, last) according to m_sort_pred. stable.
 		/// first, middle, last - is are one range, as in std::inplace_merge
 		/// if resort_old is true it also resorts [first, middle), otherwise it's assumed it's sorted
-		template <class RandomAccessIterator>
-		void sort_and_merge(RandomAccessIterator first, RandomAccessIterator middle, RandomAccessIterator last, bool resort_old = true);
+		virtual void sort_and_merge(store_iterator first, store_iterator middle, store_iterator last, bool resort_old = true);
 
 		/// get pair of iterators that hints where to search element
-		search_hint_type search_hint(const_pointer ptr) const;
+		virtual search_hint_type search_hint(const_pointer ptr) const;
 
 		/// removes from cont elements that do not pass m_filter_pred
-		template <class Cont>
-		void remove_filtered(Cont & cont);
+		virtual void remove_filtered(store_type & cont);
 
-		/// copies elements from new_data to view_store elements that satisfy m_filter_pred
-		template <class Cont, class SinglePasssRange>
-		void copy_filtered(Cont & cont, const SinglePasssRange & new_data);
+		/// copies elements from data to view_store elements that satisfy m_filter_pred
+		virtual void copy_filtered(store_type & cont, const signal_range_type & data);
+		virtual void copy_filtered(store_type & cont, const container_type & data);
 
 	public:
 		sfview_base(container_type * owner,
@@ -117,7 +116,7 @@ namespace viewed
 	void sfview_base<Container, SortPred, FilterPred>::reinit_view()
 	{
 		m_store.clear();
-		copy_filtered(m_store, *m_owner | boost::adaptors::transformed(base_type::make_pointer));
+		copy_filtered(m_store, *m_owner);
 		sort(m_store.begin(), m_store.end());
 	}
 
@@ -155,16 +154,14 @@ namespace viewed
 	}
 
 	template <class Container, class SortPred, class FilterPred>
-	template <class RandomAccessIterator>
-	void sfview_base<Container, SortPred, FilterPred>::sort(RandomAccessIterator first, RandomAccessIterator last)
+	void sfview_base<Container, SortPred, FilterPred>::sort(store_iterator first, store_iterator last)
 	{
 		auto comp = detail::make_indirect_fun(m_sort_pred);
 		ext::varalgo::stable_sort(first, last, comp);
 	}
 
 	template <class Container, class SortPred, class FilterPred>
-	template <class RandomAccessIterator>
-	void sfview_base<Container, SortPred, FilterPred>::sort_and_merge(RandomAccessIterator first, RandomAccessIterator middle, RandomAccessIterator last, bool resort_old /*= true*/)
+	void sfview_base<Container, SortPred, FilterPred>::sort_and_merge(store_iterator first, store_iterator middle, store_iterator last, bool resort_old /*= true*/)
 	{
 		auto comp = detail::make_indirect_fun(m_sort_pred);
 
@@ -181,8 +178,7 @@ namespace viewed
 	}
 
 	template <class Container, class SortPred, class FilterPred>
-	template <class Cont>
-	void sfview_base<Container, SortPred, FilterPred>::remove_filtered(Cont & cont)
+	void sfview_base<Container, SortPred, FilterPred>::remove_filtered(store_type & cont)
 	{
 		if (m_filter_pred)
 		{
@@ -192,16 +188,29 @@ namespace viewed
 	}
 
 	template <class Container, class SortPred, class FilterPred>
-	template <class Cont, class SinglePasssRange>
-	void sfview_base<Container, SortPred, FilterPred>::copy_filtered(Cont & cont, const SinglePasssRange & new_data)
+	void sfview_base<Container, SortPred, FilterPred>::copy_filtered(store_type & cont, const signal_range_type & data)
 	{
 		if (!m_filter_pred)
 		{
-			boost::push_back(cont, new_data);
+			boost::push_back(cont, data);
 			return;
 		}
 
 		auto pred = detail::make_indirect_fun(m_filter_pred);
-		boost::algorithm::copy_if(new_data, std::back_inserter(cont), pred);
+		std::copy_if(data.begin(), data.end(), std::back_inserter(cont), pred);
+	}
+
+	template <class Container, class SortPred, class FilterPred>
+	void sfview_base<Container, SortPred, FilterPred>::copy_filtered(store_type & cont, const container_type & data)
+	{
+		auto range = data | boost::adaptors::transformed(make_pointer);
+		if (!m_filter_pred)
+		{
+			boost::push_back(cont, range);
+			return;
+		}
+
+		auto pred = detail::make_indirect_fun(m_filter_pred);
+		std::copy_if(range.begin(), range.end(), std::back_inserter(cont), pred);
 	}
 }

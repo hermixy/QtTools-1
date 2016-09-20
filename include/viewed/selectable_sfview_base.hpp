@@ -47,14 +47,16 @@ namespace viewed
 		using typename base_type::store_type;
 		using typename base_type::signal_range_type;
 		using typename base_type::search_hint_type;
+		using typename base_type::store_iterator;
 
 		using base_type::make_pointer;
-		using base_type::sorted_erase_records;
 		using base_type::m_owner;
+		using base_type::m_store;
 
 	protected:
 		typedef boost::container::flat_set<const value_type *> selection_set_type;
 		selection_set_type m_selection_set;
+
 		bool m_partition_by_selection = false;
 		bool m_partition_by_selection_asc = true;
 
@@ -62,7 +64,6 @@ namespace viewed
 		bool is_partiotioned_by_selection() const { return m_partition_by_selection; }
 		bool is_partiotioned_by_selection_asc() const { return m_partition_by_selection_asc; }
 
-		bool is_selected(const_iterator it) const   { return m_selection_set.count(*it.base()); }		
 		void select(iterator it)                    { set_selected(it, true); }
 		void deselect(iterator it)                  { set_selected(it, false); }
 		void toggle_selected(iterator it)           { set_selected(it, !is_selected(it)); }
@@ -74,9 +75,10 @@ namespace viewed
 		/// sets element by it to selected state.
 		/// adjusts order if we are partitioned by selection.
 		/// returns iterator after adjustion.
-		iterator set_selected(iterator it, bool selected);
+		virtual iterator set_selected(iterator it, bool selected);
+		virtual bool is_selected(const_iterator it) const   { return m_selection_set.count(*it.base()); }
 
-		void clear_selection();
+		virtual void clear_selection();
 
 	protected:
 		/// rotates m_store so, that:
@@ -84,27 +86,23 @@ namespace viewed
 		///   if {ext_it} was not part of partition it moved at the end of partition
 		/// this method must be called only when m_partition_by_selection == true
 		/// returns new position of element pointer by ext_it
-		iterator adjust_selection_partition(iterator ext_it);
+		virtual iterator adjust_selection_partition(iterator ext_it);
 
-		void merge_newdata(const signal_range_type & sorted_updated, const signal_range_type & inserted) override;
-		void erase_records(const signal_range_type & sorted_erased) override;
-		void clear_view() override;
+		virtual void erase_records(const signal_range_type & sorted_erased) override;
+		virtual void clear_view() override;
+		
+		virtual void partition_by_selection(store_iterator first, store_iterator last);
 
-		template <class RandomAccessIterator>
-		void partition_by_selection(RandomAccessIterator first, RandomAccessIterator last);
-
-		/// sorts [first; last) with m_sort_pred, stable sort
-		template <class RandomAccessIterator>
-		void sort(RandomAccessIterator first, RandomAccessIterator last);
+		/// sorts [first; last) with m_sort_pred, stable sorts		
+		virtual void sort(store_iterator first, store_iterator last) override;
 
 		/// merges [middle, last) into [first, last) according to m_sort_pred. stable.
 		/// first, middle, last - is are one range, as in std::inplace_merge
 		/// if resort_old is true it also resorts [first, middle), otherwise it's assumed it's sorted
-		template <class RandomAccessIterator>
-		void sort_and_merge(RandomAccessIterator first, RandomAccessIterator middle, RandomAccessIterator last, bool resort_old = true);
+		virtual void sort_and_merge(store_iterator first, store_iterator middle, store_iterator last, bool resort_old = true) override;
 
 		/// get pair of iterators that hints where to search element
-		search_hint_type search_hint(const_pointer ptr) const;
+		virtual search_hint_type search_hint(const_pointer ptr) const override;
 
 	protected:
 		selectable_sfview_base(container_type * owner,
@@ -187,18 +185,6 @@ namespace viewed
 	}
 
 	template <class Container, class SortPred, class FilterPred>
-	void selectable_sfview_base<Container, SortPred, FilterPred>::merge_newdata(const signal_range_type & sorted_updated, const signal_range_type & inserted)
-	{
-		auto old_sz = m_store.size();
-		base_type::filter_update(sorted_updated);
-		base_type::copy_filtered(m_store, inserted);
-
-		auto beg = m_store.begin();
-		auto end = m_store.end();
-		sort_and_merge(beg, beg + old_sz, end, !sorted_updated.empty());
-	}
-
-	template <class Container, class SortPred, class FilterPred>
 	void selectable_sfview_base<Container, SortPred, FilterPred>::erase_records(const signal_range_type & sorted_erased)
 	{
 		for (auto ptr : sorted_erased)
@@ -215,8 +201,7 @@ namespace viewed
 	}
 
 	template <class Container, class SortPred, class FilterPred>
-	template <class RandomAccessIterator>
-	void selectable_sfview_base<Container, SortPred, FilterPred>::partition_by_selection(RandomAccessIterator first, RandomAccessIterator last)
+	void selectable_sfview_base<Container, SortPred, FilterPred>::partition_by_selection(store_iterator first, store_iterator last)
 	{
 		typedef const value_type * pointer;
 		if (m_partition_by_selection_asc) 
@@ -232,8 +217,7 @@ namespace viewed
 	}
 
 	template <class Container, class SortPred, class FilterPred>
-	template <class RandomAccessIterator>
-	void selectable_sfview_base<Container, SortPred, FilterPred>::sort(RandomAccessIterator first, RandomAccessIterator last)
+	void selectable_sfview_base<Container, SortPred, FilterPred>::sort(store_iterator first, store_iterator last)
 	{
 		if (m_partition_by_selection)
 			partition_by_selection(first, last);
@@ -242,8 +226,7 @@ namespace viewed
 	}
 
 	template <class Container, class SortPred, class FilterPred>
-	template <class RandomAccessIterator>
-	void selectable_sfview_base<Container, SortPred, FilterPred>::sort_and_merge(RandomAccessIterator first, RandomAccessIterator middle, RandomAccessIterator last, bool resort_old /*= true*/)
+	void selectable_sfview_base<Container, SortPred, FilterPred>::sort_and_merge(store_iterator first, store_iterator middle, store_iterator last, bool resort_old /*= true*/)
 	{
 		if (m_partition_by_selection)
 			partition_by_selection(first, last);

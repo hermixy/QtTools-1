@@ -1,7 +1,6 @@
 #pragma once
 #include <vector>
 #include <viewed/associative_conatiner_base.hpp>
-#include <viewed/signal_types.hpp>
 
 #include <boost/multi_index_container.hpp>
 #include <boost/multi_index/identity.hpp>
@@ -97,12 +96,13 @@ namespace viewed
 		class Type,
 		class Hash = std::hash<Type>,
 		class Equal = std::equal_to<Type>,
-		class Traits = hash_container_traits<Type, Hash, Equal>
+		class Traits = hash_container_traits<Type, Hash, Equal>,
+		class SignalTraits = default_signal_traits<Type>
 	>
 	class hash_container_base:
-		public associative_conatiner_base<Type, Traits>
+		public associative_conatiner_base<Type, Traits, SignalTraits>
 	{
-		typedef associative_conatiner_base<Type, Traits> base_type;
+		typedef associative_conatiner_base<Type, Traits, SignalTraits> base_type;
 
 	protected:
 		typedef typename base_type::traits_type traits_type;
