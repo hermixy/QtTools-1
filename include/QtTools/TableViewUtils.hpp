@@ -1,9 +1,9 @@
 #pragma once
 #include <QtCore/Qt>
 #include <QtCore/QSize>
-#include <QtWidgets/QWidget>
 
 QT_BEGIN_NAMESPACE
+class QWidget;
 class QHeaderView;
 class QTableView;
 class QLayout;
@@ -11,32 +11,6 @@ QT_END_NAMESPACE
 
 namespace QtTools
 {
-	/// находит предка с типом Type
-	/// если такого предка нет - вернет nullptr
-	/// например, может быть полезно для нахождения QMdiArea
-	template <class Type>
-	Type * FindAncestor(QWidget * widget)
-	{
-		while (widget)
-		{
-			if (auto * w = qobject_cast<Type *>(widget))
-				return w;
-
-			widget = widget->parentWidget();
-		}
-
-		return nullptr;
-	}
-
-	/// находит предка с типом Type
-	/// если такого предка нет - вернет nullptr
-	/// например, может быть полезно для нахождения QMdiArea
-	template <class Type>
-	inline const Type * FindAncestor(const QWidget * widget)
-	{
-		return FindAncestor<Type>(const_cast<QWidget *>(widget));
-	}
-
 	/// вычисляет высоту строки для заданного view,
 	/// из view берется шрифт, и другие необходимые параметры.
 	/// при этом модель не используется.

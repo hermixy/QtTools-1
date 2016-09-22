@@ -1,7 +1,7 @@
 #pragma once
 #include <algorithm>
 #include <functional>
-#include <ext/zip_iterator.hpp>
+#include <ext/iterator/zip_iterator.hpp>
 #include <ext/algorithm/slide.hpp>
 
 #include <QtCore/QVector>

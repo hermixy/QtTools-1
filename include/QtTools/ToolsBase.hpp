@@ -188,3 +188,33 @@ using QtTools::qsizet;
 using QtTools::ToQString;
 using QtTools::FromQString;
 using QtTools::DetachedCopy;
+
+
+namespace QtTools
+{
+	/// находит предка с типом Type
+	/// если такого предка нет - вернет nullptr
+	/// например, может быть полезно для нахождения QMdiArea
+	template <class Type>
+	Type * FindAncestor(QWidget * widget)
+	{
+		while (widget)
+		{
+			if (auto * w = qobject_cast<Type *>(widget))
+				return w;
+
+			widget = widget->parentWidget();
+		}
+
+		return nullptr;
+	}
+
+	/// находит предка с типом Type
+	/// если такого предка нет - вернет nullptr
+	/// например, может быть полезно для нахождения QMdiArea
+	template <class Type>
+	inline const Type * FindAncestor(const QWidget * widget)
+	{
+		return FindAncestor<Type>(const_cast<QWidget *>(widget));
+	}
+}
