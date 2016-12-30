@@ -58,6 +58,7 @@
     <ClCompile Include="src\DynamicTable.cpp" />
     <ClCompile Include="src\HeaderConfigurationWidget.cpp" />
     <ClCompile Include="src\MdiModel.cpp" />
+    <ClCompile Include="src\qt_model.cpp" />
     <ClCompile Include="src\TableViewUtils.cpp" />
     <ClCompile Include="src\ToolsBase.cpp" />
     <ClCompile Include="src\StandardItemModel.cpp" />
@@ -81,7 +82,7 @@
     <ClInclude Include="include\QtTools\Delegates\StyledDelegate.hpp" />
     <ClInclude Include="include\QtTools\DrawText.hpp" />
     <ClInclude Include="include\QtTools\ExceptionError.hpp" />
-    <ClInclude Include="include\QtTools\HeaderControlModel.hqt" />    
+    <ClInclude Include="include\QtTools\HeaderControlModel.hqt" />
     <ClInclude Include="include\QtTools\TableViewUtils.hpp" />
     <ClInclude Include="include\QtTools\ToggleChecked.hpp" />
     <ClInclude Include="include\QtTools\Delegates\AccqireStyle.hpp" />
@@ -92,7 +93,18 @@
     <ClInclude Include="include\QtTools\StringInterpolation.hpp" />
     <ClInclude Include="include\QtTools\ToolsBase.hpp" />
     <ClInclude Include="include\QtTools\HeaderSectionInfo.hpp" />
-    <ClInclude Include="include\QtTools\ViewModelBase.hpp" />
+    <ClInclude Include="include\viewed\algorithm.hpp" />
+    <ClInclude Include="include\viewed\associative_conatiner_base.hpp" />
+    <ClInclude Include="include\viewed\get_functor.hpp" />
+    <ClInclude Include="include\viewed\hash_container_base.hpp" />
+    <ClInclude Include="include\viewed\indirect_functor.hpp" />
+    <ClInclude Include="include\viewed\ordered_container_base.hpp" />
+    <ClInclude Include="include\viewed\qt_model.hpp" />
+    <ClInclude Include="include\viewed\selectable_sfview_qtbase.hpp" />
+    <ClInclude Include="include\viewed\sfview_qtbase.hpp" />
+    <ClInclude Include="include\viewed\signal_traits.hpp" />
+    <ClInclude Include="include\viewed\view_base.hpp" />
+    <ClInclude Include="include\viewed\view_qtbase.hpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

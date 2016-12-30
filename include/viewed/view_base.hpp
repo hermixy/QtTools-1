@@ -1,6 +1,6 @@
 #pragma once
 #include <vector>
-#include <ext/algorithm.hpp>
+#include <ext/range/range_traits.hpp>
 
 #include <boost/iterator/indirect_iterator.hpp>
 #include <boost/range/algorithm_ext.hpp>
@@ -9,15 +9,15 @@
 
 namespace viewed
 {
-	/// This class provides base for building views,
-	/// but not required to be base class, as long as you correctly handle signals - you can do anything.
+	/// This class provides base for building views based on viewed containers.
+	/// 
 	/// it provides base for other views:
-	///  * vector of pointers,
+	///  * vector of pointers
 	///  * stl compatible interface, indirected, not pointers
 	///  * it connects signals from container to handlers(which are virtual and can be overridden)
 	///    basic implementation does almost nothing, just synchronizes view with data owning container
 	///    derived classes can seal themselves with final on those methods
-	///
+	/// 
 	/// Main container expected to live as long as view does. View holds only non owning pointers to data
 	/// 
 	/// container must meet following conditions: 
@@ -61,7 +61,6 @@ namespace viewed
 	template <class Container>
 	class view_base
 	{
-		//typedef view_base<Container> self_type;
 		typedef view_base self_type;
 
 	public:
@@ -130,6 +129,9 @@ namespace viewed
 		virtual void reinit_view();
 
 	protected:
+		/// connects container signals to appropriate handlers
+		virtual void connect_signals();
+
 		/// container event handlers, those are called on container signals, 
 		/// you could reimplement them to provide proper handling of your view
 		
@@ -147,8 +149,8 @@ namespace viewed
 		/// default implementation, erases those records from main store
 		virtual void erase_records(const signal_range_type & sorted_erased);
 
+		/// called when container is cleared, clears m_store.
 		virtual void clear_view();
-		virtual void connect_signals();
 		
 	protected:
 		/// helper method to make a pointer
@@ -173,10 +175,18 @@ namespace viewed
 	}; //class view_base
 
 	template <class Container>
+	void view_base<Container>::connect_signals()
+	{
+		m_clear_con = m_owner->on_clear([this] { clear_view(); });
+		m_upsert_con = m_owner->on_upsert([this](const signal_range_type & u, const signal_range_type & i) { merge_newdata(u, i); });
+		m_erase_con = m_owner->on_erase([this](const signal_range_type & r) { erase_records(r); });
+	}
+
+	template <class Container>
 	void view_base<Container>::reinit_view()
 	{
-		m_store.clear();
-		boost::push_back(m_store, *m_owner | boost::adaptors::transformed(make_pointer));
+		auto rng = *m_owner | boost::adaptors::transformed(make_pointer);
+		ext::assign(m_store, boost::begin(rng), boost::end(rng));
 	}
 
 	template <class Container>
@@ -195,14 +205,6 @@ namespace viewed
 	void view_base<Container>::clear_view()
 	{
 		m_store.clear();
-	}
-
-	template <class Container>
-	void view_base<Container>::connect_signals()
-	{
-		m_clear_con = m_owner->on_clear([this] { clear_view(); });
-		m_upsert_con = m_owner->on_upsert([this](const signal_range_type & u, const signal_range_type & i) { merge_newdata(u, i); });
-		m_erase_con = m_owner->on_erase([this](const signal_range_type & r) { erase_records(r); });
 	}
 
 	template <class Container>

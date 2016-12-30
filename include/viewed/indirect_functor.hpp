@@ -8,41 +8,38 @@
 
 namespace viewed
 {
-	namespace detail
+	/// преобразует предикат в boost::indirect_fun<Pred>
+	template <class Pred>
+	struct make_indirect_pred_type
 	{
-		/// преобразует предикат в boost::indirect_fun<Pred>
-		template <class Pred>
-		struct make_indirect_pred_type
-		{
-			typedef typename std::conditional<
-				std::is_copy_constructible<Pred>::value,
-				ext::indirect_functor<Pred>,
-				ext::indirect_functor<std::reference_wrapper<const Pred>>
-			>::type type;
-		};
+		typedef typename std::conditional<
+			std::is_copy_constructible<Pred>::value,
+			ext::indirect_functor<Pred>,
+			ext::indirect_functor<std::reference_wrapper<const Pred>>
+		>::type type;
+	};
 
-		/// преобразует boost::variant<Types...> в boost::variant<boost::indirect_fun<Types>...>
-		template <class... VariantTypes>
-		struct make_indirect_pred_type<boost::variant<VariantTypes...>>
-		{
-			typedef boost::variant<VariantTypes...> initial_variant;
-			typedef typename boost::mpl::transform <
-				typename initial_variant::types,
-				make_indirect_pred_type<boost::mpl::_1>
-			>::type transformed;
+	/// преобразует boost::variant<Types...> в boost::variant<boost::indirect_fun<Types>...>
+	template <class... VariantTypes>
+	struct make_indirect_pred_type<boost::variant<VariantTypes...>>
+	{
+		typedef boost::variant<VariantTypes...> initial_variant;
+		typedef typename boost::mpl::transform <
+			typename initial_variant::types,
+			make_indirect_pred_type<boost::mpl::_1>
+		>::type transformed;
 
-		public:
-			typedef typename boost::make_variant_over<transformed>::type type;
-		};
+	public:
+		typedef typename boost::make_variant_over<transformed>::type type;
+	};
 
-		///аналогичен boost::make_indirect_fun, 
-		///но корректно обрабатывает boost::variant
-		template <class Pred>
-		inline
-		typename make_indirect_pred_type<Pred>::type
-			make_indirect_fun(const Pred & pred)
-		{
-			return {pred};
-		}
+	///аналогичен boost::make_indirect_fun, 
+	///но корректно обрабатывает boost::variant
+	template <class Pred>
+	inline
+	typename make_indirect_pred_type<Pred>::type
+		make_indirect_fun(const Pred & pred)
+	{
+		return {pred};
 	}
 }
