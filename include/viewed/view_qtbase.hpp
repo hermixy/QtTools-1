@@ -55,10 +55,10 @@ namespace viewed
 		/// default implantation just calls get_model->dataChanged(index(row, 0), inex(row, model->columnCount)
 		virtual void emit_changed(int_vector::const_iterator first, int_vector::const_iterator last);
 		/// changes persistent indexes via get_model->changePersistentIndex.
-		/// [first; last) - range where range[oldIdx] => newIdx.
+		/// [first; last) - range where range[newIdx] => oldIdx.
 		/// if newIdx < 0 - index should be removed(changed on invalid, qt supports it)
 		/// 
-		/// default implementation inverses array, so range[newIdx] => oldIdx, 
+		/// default implementation inverses array, so range[oldIdx] => newIdx, 
 		/// and then for each index in model->persistentIndexList changes it.
 		virtual void change_indexes(int_vector::const_iterator first, int_vector::const_iterator last, int offset);
 

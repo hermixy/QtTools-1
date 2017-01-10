@@ -169,6 +169,38 @@ namespace viewed
 	void sfview_qtbase<Container, SortPred, FilterPred>::
 		merge_newdata(const signal_range_type & sorted_updated, const signal_range_type & inserted)
 	{
+		// inserted records can be appended(only those passing filter predicate) to m_store and then merged into via inplace_merge algorithm.
+		// With updated it's more complicated. for every updated record it's filtered state can be changed:
+		//
+		// * passes -> not passes - items should be erased from m_store
+		// * not passes -> passes - those items should threated like inserted
+		// * passes -> passes 
+		//     it's position in m_store may or may not changed, we do not have a way to know it - record must be resorted.
+		//     Also remember we are stable sorted, we can't erase and then re-merge it:
+		//     if it's sort criteria doesn't changed, and there are equal neighbors - 
+		//     it's position will change => we are unstable.
+		//     
+		//     Those records should be left where they where and stable_sort should called on entire m_store.
+		//     
+		// We do not know, in advance, status of updated records.
+		// Algorithm is next:
+		// We append all updated records to m_store. Now we have:
+		// [first, middle) - current records;
+		// [middle, last) - updated candidates, sorted by pointer value;
+		//
+		// every item from [first, middle) is searched in [middle, last), found items from [middle, last) are marked via setting lowest bit to 1
+		// (because of heap allocation those pointer lowest bit will always be 0)
+		// complexity is: N * log M
+		//
+		// found items are tested if they pass filter predicate, and if not - they are removed via remove_if.
+		// complexity is: N
+		// 
+		// marked items from [middle, last) are removed as they are already present in [first, middle)
+		// complexity is: M
+		// 
+		// left updated and inserted than merged to m_store, also merge operation permutates index_array, 
+		// which is used to update qt persistent indexes
+
 		int_vector index_array, affected_indexes;
 		int_vector::iterator removed_first, removed_last, changed_first, changed_last;
 		store_iterator first, middle, last;
@@ -248,7 +280,7 @@ namespace viewed
 			order_changed
 		);
 
-		change_indexes(ifirst, ilast, offset);
+		change_indexes(index_array.begin(), index_array.end(), offset);
 
 		Q_EMIT model->layoutChanged(model_type::empty_model_list, model->VerticalSortHint);
 	}
