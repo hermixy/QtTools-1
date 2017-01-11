@@ -55,11 +55,8 @@ namespace viewed
 		/// default implantation just calls get_model->dataChanged(index(row, 0), inex(row, model->columnCount)
 		virtual void emit_changed(int_vector::const_iterator first, int_vector::const_iterator last);
 		/// changes persistent indexes via get_model->changePersistentIndex.
-		/// [first; last) - range where range[newIdx] => oldIdx.
+		/// [first; last) - range where range[oldIdx] => newIdx.
 		/// if newIdx < 0 - index should be removed(changed on invalid, qt supports it)
-		/// 
-		/// default implementation inverses array, so range[oldIdx] => newIdx, 
-		/// and then for each index in model->persistentIndexList changes it.
 		virtual void change_indexes(int_vector::const_iterator first, int_vector::const_iterator last, int offset);
 
 	protected:
@@ -129,15 +126,7 @@ namespace viewed
 	void view_qtbase<Container>::change_indexes(int_vector::const_iterator first, int_vector::const_iterator last, int offset)
 	{
 		auto * model = get_model();
-
-		int i = offset;
-		int_vector inverse(last - first);
-
-		for (; first != last; ++first, ++i)
-		{
-			int val = *first;
-			inverse[std::abs(val) - offset] = val >= 0 ? i : -1;
-		}
+		auto size = last - first;
 
 		for (const auto & idx : model->persistentIndexList())
 		{
@@ -148,8 +137,8 @@ namespace viewed
 
 			if (row < offset) continue;
 
-			assert(row < inverse.size());
-			model->changePersistentIndex(idx, model->index(inverse[row], col));
+			assert(row < size); (void)size;
+			model->changePersistentIndex(idx, model->index(first[row - offset], col));
 		}
 	}
 
@@ -198,8 +187,9 @@ namespace viewed
 		auto * model = get_model();
 		Q_EMIT model->layoutAboutToBeChanged(model_type::empty_model_list, model->VerticalSortHint);
 
-		auto rmap = viewed::build_relloc_map(erased_first, erased_last, m_store.size());
-		change_indexes(rmap.begin(), rmap.end(), 0);
+		auto index_map = viewed::build_relloc_map(erased_first, erased_last, m_store.size());
+		viewed::inverse_index_array(index_map.begin(), index_map.end());
+		change_indexes(index_map.begin(), index_map.end(), 0);
 
 		last = viewed::remove_indexes(first, last, erased_first, erased_last);
 		m_store.resize(last - first);

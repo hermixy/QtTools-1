@@ -263,24 +263,22 @@ namespace viewed
 
 		constexpr int offset = 0;
 		index_array.resize(m_store.size() + (removed_last - removed_first));
-		std::iota(index_array.begin(), index_array.end(), offset);
-
-		for (auto it = removed_first; it != removed_last; ++it)
-			index_array[*it] = -*it;
-
-		std::stable_partition(index_array.begin(), index_array.end(), [](int v) { return v >= 0; });
 
 		auto ifirst = index_array.begin();
-		auto imiddle = ifirst + middle_sz;
-		auto ilast = ifirst + m_store.size();
+		auto ilast = index_array.end();
+
+		std::iota(ifirst, ilast, offset);
+		ilast = viewed::remove_indexes(ifirst, ilast, removed_first, removed_last);
+		ilast = std::transform(removed_first, removed_last, ilast, [](auto val) { return -val; });
 
 		merge_newdata(
 			first, middle, last, 
-			ifirst, imiddle, ilast,
+			ifirst, ifirst + middle_sz, ifirst + m_store.size(),
 			order_changed
 		);
 
-		change_indexes(index_array.begin(), index_array.end(), offset);
+		viewed::inverse_index_array(ifirst, ilast, offset);
+		change_indexes(ifirst, ilast, offset);
 
 		Q_EMIT model->layoutChanged(model_type::empty_model_list, model->VerticalSortHint);
 	}
@@ -348,6 +346,8 @@ namespace viewed
 		std::iota(ifirst, ilast, offset);
 
 		sort(first, last, ifirst, ilast);
+
+		viewed::inverse_index_array(ifirst, ilast, offset);
 		change_indexes(ifirst, ilast, offset);
 
 		Q_EMIT model->layoutChanged(model_type::empty_model_list, model->VerticalSortHint);

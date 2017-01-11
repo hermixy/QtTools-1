@@ -6,6 +6,22 @@
 
 namespace viewed
 {
+	template <class RandomAccessIterator>
+	void inverse_index_array(RandomAccessIterator first, RandomAccessIterator last,
+	                         typename std::iterator_traits<RandomAccessIterator>::value_type offset = 0)
+	{
+		auto i = offset;
+		std::vector<typename std::iterator_traits<RandomAccessIterator>::value_type> inverse(last - first);
+
+		for (auto it = first; it != last; ++it, ++i)
+		{
+			int val = *it;
+			inverse[std::abs(val) - offset] = val >= 0 ? i : -1;
+		}
+
+		std::copy(inverse.begin(), inverse.end(), first);
+	}
+	
 	template <class Iterator>
 	std::vector<int> build_relloc_map(Iterator removed_first, Iterator removed_last, std::size_t store_size)
 	{

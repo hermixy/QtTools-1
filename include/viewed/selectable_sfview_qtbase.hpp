@@ -333,6 +333,8 @@ namespace viewed
 		std::iota(ifirst, ilast, offset);
 
 		partition(first, last, ifirst, ilast);
+
+		viewed::inverse_index_array(ifirst, ilast, offset);
 		change_indexes(ifirst, ilast, offset);
 
 		Q_EMIT model->layoutChanged(model_type::empty_model_list, model->VerticalSortHint);
