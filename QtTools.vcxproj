@@ -34,7 +34,7 @@
     <Import Project="$(SolutionDir)SolutionRoot.props" Condition="exists('$(SolutionDir)SolutionRoot.props')" />
   </ImportGroup>
   <ImportGroup Label="ExtensionSettings">
-    <Import Project="$(SolutionDir)Libraries\MSBuildDefSettings\Qt.props" Condition="exists('$(SolutionDir)Libraries\MSBuildDefSettings\Qt.props')" />
+    <Import Project="$(SolutionDir)externals\msbuild-def\Qt.props" Condition="exists('$(SolutionDir)externals\msbuild-def\Qt.props')" />
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup />
@@ -49,7 +49,6 @@
     <ClCompile Include="src\Delegates\StyledDelegate.cpp" />
     <ClCompile Include="src\DrawText.cpp" />
     <ClCompile Include="src\ExceptionError.cpp" />
-    <ClCompile Include="src\AbstractConnectionController.cpp" />
     <ClCompile Include="src\Delegates\CheckBoxDelegate.cpp" />
     <ClCompile Include="src\DelayedExecutionTimer.cpp" />
     <ClCompile Include="src\Delegates\StyledParts.cpp" />
@@ -76,7 +75,6 @@
   <ItemGroup>
     <ClInclude Include="include\QtTools\BasicHeaderControlModel.hpp" />
     <ClInclude Include="include\QtTools\ConnectionController.hpp" />
-    <ClInclude Include="include\QtTools\AbstractConnectionController.hpp" />
     <ClInclude Include="include\QtTools\DateUtils.hpp" />
     <ClInclude Include="include\QtTools\Delegates\SearchDelegate.hpp" />
     <ClInclude Include="include\QtTools\Delegates\StyledDelegate.hpp" />
