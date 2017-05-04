@@ -55,6 +55,7 @@
     <ClCompile Include="src\Delegates\DrawFormattedText.cpp" />
     <ClCompile Include="src\Delegates\FormattedItemDelegate.cpp" />
     <ClCompile Include="src\DynamicTable.cpp" />
+    <ClCompile Include="src\GuiQueue.cpp" />
     <ClCompile Include="src\HeaderConfigurationWidget.cpp" />
     <ClCompile Include="src\MdiModel.cpp" />
     <ClCompile Include="src\qt_model.cpp" />
@@ -67,6 +68,7 @@
     <QtMOCCompile Include="include\QtTools\BasicHeaderControlModelHelper.hqt" />
     <QtMOCCompile Include="include\QtTools\DelayedExecutionTimer.hqt" />
     <QtMOCCompile Include="include\QtTools\DynamicTable.hqt" />
+    <QtMOCCompile Include="include\QtTools\GuiQueue.hqt" />
     <QtMOCCompile Include="include\QtTools\HeaderConfigurationWidget.hqt" />
     <QtMOCCompile Include="include\QtTools\MdiModel.hqt" />
     <QtMOCCompile Include="include\QtTools\StandardItemModel.hqt" />
