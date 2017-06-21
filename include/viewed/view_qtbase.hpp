@@ -55,7 +55,7 @@ namespace viewed
 		/// default implantation just calls get_model->dataChanged(index(row, 0), inex(row, model->columnCount)
 		virtual void emit_changed(int_vector::const_iterator first, int_vector::const_iterator last);
 		/// changes persistent indexes via get_model->changePersistentIndex.
-		/// [first; last) - range where range[oldIdx] => newIdx.
+		/// [first; last) - range where range[oldIdx - offset] => newIdx.
 		/// if newIdx < 0 - index should be removed(changed on invalid, qt supports it)
 		virtual void change_indexes(int_vector::const_iterator first, int_vector::const_iterator last, int offset);
 
@@ -69,7 +69,7 @@ namespace viewed
 		/// 
 		/// default implementation, appends inserted new records, and does nothing with sorted_updated
 		/// calls qt beginInsertRows/endInsertRows
-		virtual void merge_newdata(const signal_range_type & sorted_updated, const signal_range_type & inserted) override;
+		virtual void upsert_newdata(const signal_range_type & sorted_updated, const signal_range_type & inserted) override;
 
 		/// called when some records are erased from container
 		/// view have to synchronize itself.
@@ -152,7 +152,7 @@ namespace viewed
 	}
 
 	template <class Container>
-	void view_qtbase<Container>::merge_newdata(const signal_range_type & sorted_updated, const signal_range_type & inserted)
+	void view_qtbase<Container>::upsert_newdata(const signal_range_type & sorted_updated, const signal_range_type & inserted)
 	{
 		if (inserted.empty()) return;
 
@@ -161,7 +161,7 @@ namespace viewed
 		
 		auto * model = get_model();
 		model->beginInsertRows(model_type::invalid_index, first, last);
-		base_type::merge_newdata(sorted_updated, inserted);
+		base_type::upsert_newdata(sorted_updated, inserted);
 		model->endInsertRows();
 	}
 
@@ -188,7 +188,6 @@ namespace viewed
 		Q_EMIT model->layoutAboutToBeChanged(model_type::empty_model_list, model->VerticalSortHint);
 
 		auto index_map = viewed::build_relloc_map(erased_first, erased_last, m_store.size());
-		viewed::inverse_index_array(index_map.begin(), index_map.end());
 		change_indexes(index_map.begin(), index_map.end(), 0);
 
 		last = viewed::remove_indexes(first, last, erased_first, erased_last);

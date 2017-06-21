@@ -45,7 +45,7 @@ namespace viewed
 	/// sorting, filtering, and may be more
 	/// 
 	/// derived classes should implement:
-	///  * merge_newdata
+	///  * upsert_newdata
 	///  * reinit_view
 	///  * clear
 	///  * erase_records
@@ -140,7 +140,7 @@ namespace viewed
 		/// @Param sorted_newrecs range of pointers to updated records, sorted by pointer value
 		/// 
 		/// default implementation, appends inserted new records, and does nothing with sorted_updated
-		virtual void merge_newdata(const signal_range_type & sorted_updated, const signal_range_type & inserted);
+		virtual void upsert_newdata(const signal_range_type & sorted_updated, const signal_range_type & inserted);
 
 		/// called when some records are erased from container
 		/// view have to synchronize itself.
@@ -178,7 +178,7 @@ namespace viewed
 	void view_base<Container>::connect_signals()
 	{
 		m_clear_con = m_owner->on_clear([this] { clear_view(); });
-		m_upsert_con = m_owner->on_upsert([this](const signal_range_type & u, const signal_range_type & i) { merge_newdata(u, i); });
+		m_upsert_con = m_owner->on_upsert([this](const signal_range_type & u, const signal_range_type & i) { upsert_newdata(u, i); });
 		m_erase_con = m_owner->on_erase([this](const signal_range_type & r) { erase_records(r); });
 	}
 
@@ -190,7 +190,7 @@ namespace viewed
 	}
 
 	template <class Container>
-	void view_base<Container>::merge_newdata(const signal_range_type & sorted_updated, const signal_range_type & inserted)
+	void view_base<Container>::upsert_newdata(const signal_range_type & sorted_updated, const signal_range_type & inserted)
 	{
 		boost::push_back(m_store, inserted);
 	}

@@ -3,6 +3,7 @@
 #include <algorithm>
 #include <numeric>
 
+#include <viewed/refilter_type.hpp>
 #include <viewed/view_qtbase.hpp>
 #include <viewed/indirect_functor.hpp>
 #include <viewed/get_functor.hpp>
@@ -51,6 +52,8 @@ namespace viewed
 		typedef SortPred sort_pred_type;
 		typedef FilterPred filter_pred_type;
 
+		typedef viewed::refilter_type refilter_type;
+
 	protected:
 		using typename base_type::store_type;
 		using typename base_type::signal_range_type;
@@ -90,11 +93,17 @@ namespace viewed
 		virtual void reinit_view() override;
 
 	protected:
-		/// merges new and updated records into view, preserving filter/sort order. stable
+		/// inserts and merges new and updated records into view, preserving filter/sort order. stable
 		/// emits appropriate qt signals, uses merge_newdata(iter..., iter..., ...) to calculate index permutations.
-		virtual void merge_newdata(const signal_range_type & sorted_updated, const signal_range_type & inserted) override;
+		virtual void upsert_newdata(const signal_range_type & sorted_updated, const signal_range_type & inserted) override;
 		
 	protected:
+		/// merges new and updated records into view, preserving filter/sort order. stable,
+		/// new and updated should already be appended to m_store in order: current data..., updated..., inserted...].
+		/// emits appropriate qt signals, uses merge_newdata(iter..., iter..., ...) to calculate index permutations.
+		virtual void upsert_store(store_iterator first, store_iterator first_updated,
+		                          store_iterator first_inserted, store_iterator last);
+
 		/// merges m_store's [middle, last) into [first, last) according to m_sort_pred. stable.
 		/// first, middle, last - is are one range, as in std::inplace_merge
 		/// if resort_old is true it also resorts [first, middle), otherwise it's assumed it's sorted
@@ -126,12 +135,17 @@ namespace viewed
 		/// get pair of iterators that hints where to search element
 		virtual search_hint_type search_hint(const_pointer ptr) const;
 
-		/// removes from cont elements that do not pass m_filter_pred
-		virtual void remove_filtered(store_type & cont);
-
-		/// appends elements from data to m_store that satisfy m_filter_pred
-		virtual void copy_filtered(const signal_range_type & data);
-		virtual void copy_filtered(const container_type & data);
+		/// refilters m_store with m_filter_pred according to rtype:
+		/// * same        - does nothing and immediately returns(does not emit any qt signals)
+		/// * incremental - calls refilter_full
+		/// * full        - calls refilter_incremental		
+		virtual void refilter_and_notify(refilter_type rtype);
+		/// removes elements not passing m_filter_pred from m_store
+		/// emits qt layoutAboutToBeChanged(..., VerticalSortHint), layoutUpdated(..., VerticalSortHint)
+		virtual void refilter_incremental();
+		/// fills m_store from owner with values passing m_filter_pred and sorts them according to m_sort_pred
+		/// emits qt layoutAboutToBeChanged(..., VerticalSortHint), layoutUpdated(..., VerticalSortHint)
+		virtual void refilter_full();
 
 	public:
 		sfview_qtbase(container_type * owner,
@@ -158,8 +172,16 @@ namespace viewed
 		auto * model = this->get_model();
 		model->beginResetModel();
 
-		m_store.clear();
-		copy_filtered(*m_owner);
+		auto range = *m_owner | boost::adaptors::transformed(make_pointer);
+		if (!m_filter_pred)
+			m_store.assign(range.begin(), range.end());
+		else
+		{
+			m_store.clear();
+			auto pred = make_indirect_fun(m_filter_pred);
+			std::copy_if(range.begin(), range.end(), std::back_inserter(m_store), pred);
+		}
+
 		sort(m_store.begin(), m_store.end());
 
 		model->endResetModel();
@@ -167,7 +189,22 @@ namespace viewed
 
 	template <class Container, class SortPred, class FilterPred>
 	void sfview_qtbase<Container, SortPred, FilterPred>::
-		merge_newdata(const signal_range_type & sorted_updated, const signal_range_type & inserted)
+		upsert_newdata(const signal_range_type & sorted_updated, const signal_range_type & inserted)
+	{
+		boost::push_back(m_store, sorted_updated);
+		boost::push_back(m_store, inserted);
+
+		auto first = m_store.begin();
+		auto last = m_store.end();
+		auto first_inserted = last - inserted.size();
+		auto first_updated = first_inserted - sorted_updated.size();
+		upsert_store(first, first_updated, first_inserted, last);
+	}
+
+	template <class Container, class SortPred, class FilterPred>
+	void sfview_qtbase<Container, SortPred, FilterPred>::
+		upsert_store(store_iterator first, store_iterator first_updated,
+		             store_iterator first_inserted, store_iterator last)
 	{
 		// inserted records can be appended(only those passing filter predicate) to m_store and then merged into via inplace_merge algorithm.
 		// With updated it's more complicated. for every updated record it's filtered state can be changed:
@@ -203,25 +240,23 @@ namespace viewed
 
 		int_vector index_array, affected_indexes;
 		int_vector::iterator removed_first, removed_last, changed_first, changed_last;
-		store_iterator first, middle, last;
-
-		auto middle_sz = m_store.size();
+		std::size_t middle_sz = first_updated - first;
+		store_iterator middle;
+		
 		removed_first = removed_last = changed_first = changed_last = affected_indexes.begin();
 		bool order_changed = false;
 
-		if (!sorted_updated.empty())
+		// there are updated
+		if (first_updated != first_inserted)
 		{
-			affected_indexes.resize(sorted_updated.size());
+			affected_indexes.resize(first_inserted - first_updated);
 			removed_first = affected_indexes.begin();
 			removed_last = removed_first;
 			changed_first = affected_indexes.end();
 			changed_last = changed_first;
-
-			boost::push_back(m_store, sorted_updated);
-
-			first = m_store.begin();
-			middle = first + middle_sz;
-			last = m_store.end();
+			
+			middle = first_updated;
+			middle_sz = middle - first;
 
 			auto test_and_mark = [new_first = middle, new_last = last](const_pointer ptr)
 			{
@@ -246,7 +281,8 @@ namespace viewed
 			order_changed = changed_first != changed_last;
 
 			middle = viewed::remove_indexes(first, middle, removed_first, removed_last);
-			last = std::copy_if(first + middle_sz, last, middle, [](auto ptr) { return !is_marked(ptr); });
+			last = std::copy_if(first + middle_sz, first_inserted, middle, [](auto ptr) { return !is_marked(ptr); });
+			last = std::copy(first_inserted, m_store.end(), last);
 			
 			middle_sz = middle - first;
 			m_store.resize(last - first);
@@ -254,8 +290,6 @@ namespace viewed
 
 		auto * model = get_model();
 		Q_EMIT model->layoutAboutToBeChanged(model_type::empty_model_list, model->VerticalSortHint);
-
-		copy_filtered(inserted);
 
 		first = m_store.begin();
 		middle = first + middle_sz;
@@ -361,39 +395,57 @@ namespace viewed
 	}
 
 	template <class Container, class SortPred, class FilterPred>
-	void sfview_qtbase<Container, SortPred, FilterPred>::remove_filtered(store_type & cont)
+	void sfview_qtbase<Container, SortPred, FilterPred>::refilter_and_notify(refilter_type rtype)
 	{
-		if (m_filter_pred)
+		switch (rtype)
 		{
-			auto pred = [this](const_pointer ptr) { return !m_filter_pred(*ptr); };
-			boost::remove_erase_if(cont, pred);
+			default: 
+			case refilter_type::same:        return;
+
+			case refilter_type::incremental: return refilter_incremental();
+			case refilter_type::full:        return refilter_full();
 		}
 	}
 
 	template <class Container, class SortPred, class FilterPred>
-	void sfview_qtbase<Container, SortPred, FilterPred>::copy_filtered(const signal_range_type & data)
+	void sfview_qtbase<Container, SortPred, FilterPred>::refilter_incremental()
 	{
-		if (!m_filter_pred)
-		{
-			boost::push_back(m_store, data);
-			return;
-		}
+		if (!m_filter_pred) return;
+		
+		auto test = [this](const_pointer ptr) { return !m_filter_pred(*ptr); };
 
-		auto pred = make_indirect_fun(m_filter_pred);
-		std::copy_if(data.begin(), data.end(), std::back_inserter(m_store), pred);
+		std::vector<int> affected_indexes(m_store.size());
+		auto erased_first = affected_indexes.begin();
+		auto erased_last = erased_first;
+		auto first = m_store.begin();
+		auto last = m_store.end();
+
+		for (auto it = std::find_if(first, last, test); it != last; it = std::find_if(it, last, test))
+			*erased_last++ = static_cast<int>(it - first);
+
+		auto * model = get_model();
+		Q_EMIT model->layoutAboutToBeChanged(model_type::empty_model_list, model->VerticalSortHint);
+
+		auto index_map = viewed::build_relloc_map(erased_first, erased_last, m_store.size());
+		change_indexes(index_map.begin(), index_map.end(), 0);
+
+		last = viewed::remove_indexes(first, last, erased_first, erased_last);
+		m_store.resize(last - first);
+
+		Q_EMIT model->layoutChanged(model_type::empty_model_list, model->VerticalSortHint);
 	}
 
 	template <class Container, class SortPred, class FilterPred>
-	void sfview_qtbase<Container, SortPred, FilterPred>::copy_filtered(const container_type & data)
+	void sfview_qtbase<Container, SortPred, FilterPred>::refilter_full()
 	{
-		auto range = data | boost::adaptors::transformed(make_pointer);
-		if (!m_filter_pred)
-		{
-			boost::push_back(m_store, range);
-			return;
-		}
+		auto sz = m_store.size();
+		m_store.resize(sz * 2);
 
-		auto pred = make_indirect_fun(m_filter_pred);
-		std::copy_if(range.begin(), range.end(), std::back_inserter(m_store), pred);
+		auto first = m_store.begin();
+		auto last = m_store.begin();
+		auto first_updated = first + sz;
+		std::copy(first, first_updated, first_updated);
+
+		upsert_store(first, first_updated, first_updated, last);
 	}
 }
