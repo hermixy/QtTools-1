@@ -1,5 +1,6 @@
 #pragma once
 #include <cstdint>
+#include <type_traits>
 #include <vector>
 #include <algorithm>
 #include <numeric>
@@ -14,13 +15,15 @@ namespace viewed
 	void inverse_index_array(RandomAccessIterator first, RandomAccessIterator last,
 	                         typename std::iterator_traits<RandomAccessIterator>::value_type offset = 0)
 	{
-		auto i = offset;
 		typedef typename std::iterator_traits<RandomAccessIterator>::value_type value_type;
+		static_assert(std::is_signed<value_type>::value, "index type must be signed");
+		
 		std::vector<value_type> inverse(last - first);
+		auto i = static_cast<value_type>(offset);
 
 		for (auto it = first; it != last; ++it, ++i)
 		{
-			int val = *it;
+			value_type val = *it;
 			inverse[std::abs(val) - offset] = val >= 0 ? i : -1;
 		}
 
@@ -34,12 +37,15 @@ namespace viewed
 	/// [removed_first; removed_last) index range of removed elements, for example:
 	/// [0, 5, 7] elements by indexes 0, 5, 7 were removed as if by std::remove_if algorithm.
 	template <class Iterator>
-	std::vector<int> build_relloc_map(Iterator removed_first, Iterator removed_last, std::size_t store_size)
+	auto build_relloc_map(Iterator removed_first, Iterator removed_last, std::size_t store_size)
+		-> std::vector<typename std::iterator_traits<Iterator>::value_type>
 	{
-		std::vector<int> index_array(store_size);
-
-		int v1 = 0, v2 = static_cast<int>(store_size);
-		int val = 0;
+		typedef typename std::iterator_traits<Iterator>::value_type value_type;
+		static_assert(std::is_signed<value_type>::value, "index type must be signed");
+		
+		std::vector<value_type> index_array(store_size);
+		value_type v1 = 0, v2 = static_cast<value_type>(store_size);
+		value_type val = 0;
 
 		for (; removed_first != removed_last; ++removed_first)
 		{
@@ -48,7 +54,7 @@ namespace viewed
 			auto first = index_array.begin() + v1;
 			auto last = index_array.begin() + v2;
 			std::iota(first, last, val);
-			val += static_cast<int>(last - first);
+			val += static_cast<value_type>(last - first);
 
 			*last = -1;
 			v1 = ++v2;
