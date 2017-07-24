@@ -25,7 +25,8 @@ namespace QtTools
 	{
 		// смотри также реализацию TableSizeHint, там есть важные пояснения
 		auto * model = view->model();
-		Q_ASSERT(model);
+		if (not model) return view->sizeHint().width();
+
 		int count = model->columnCount();
 		int width = 0;
 		
@@ -50,7 +51,8 @@ namespace QtTools
 	{
 		// смотри также реализацию TableSizeHint, там есть важные пояснения
 		auto * model = view->model();
-		Q_ASSERT(model);
+		if (not model) return view->sizeHint().height();
+
 		int count = model->rowCount();
 		int height = 0;
 
@@ -92,7 +94,8 @@ namespace QtTools
 	                    bool forceSB /* = false */)
 	{
 		const auto * model = view->model();
-		Q_ASSERT(model);
+		if (not model) return view->sizeHint();
+		
 		const int rc = model->rowCount();
 		const int cc = model->columnCount();
 
