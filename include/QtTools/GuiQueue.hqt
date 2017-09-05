@@ -51,15 +51,13 @@ namespace QtTools
 		Q_DISABLE_COPY(GuiQueue);
 	};
 
-
-
 	template <class Range>
-	void PlaceActions(Range && range)
+	void GuiQueue::AddAll(Range && range)
 	{
 		action_list actions;
 		for (auto && action : range)
 			actions.push_back(std::forward<decltype(action)>(action));
 
-		PlaceActions(std::move(actions));
+		AddAll(std::move(actions));
 	}
 }
