@@ -181,7 +181,7 @@ namespace viewed
 		auto first = m_store.begin();
 		auto last = m_store.end();
 
-		for (auto it = std::find_if(first, last, test); it != last; it = std::find_if(it, last, test))
+		for (auto it = std::find_if(first, last, test); it != last; it = std::find_if(++it, last, test))
 			*erased_last++ = static_cast<int>(it - first);
 
 		auto * model = get_model();

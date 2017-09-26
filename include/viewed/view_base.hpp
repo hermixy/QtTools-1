@@ -159,7 +159,7 @@ namespace viewed
 		/// removes from m_store records from recs
 		/// complexity N log2 M, 
 		/// where N = m_store.size(), M = recs.size()
-		void sorted_erase_records(const signal_range_type & recs);
+		void sorted_erase_records(const signal_range_type & sorted_erased);
 
 	protected:
 		view_base(container_type * owner) : m_owner(owner) { }
@@ -208,10 +208,13 @@ namespace viewed
 	}
 
 	template <class Container>
-	void view_base<Container>::sorted_erase_records(const signal_range_type & recs)
+	void view_base<Container>::sorted_erase_records(const signal_range_type & sorted_erased)
 	{
-		auto todel = [&recs](const_pointer rec) {
-			return boost::binary_search(recs, rec);
+		if (sorted_erased.empty()) return;
+
+		auto todel = [&sorted_erased](const_pointer rec)
+		{
+			return boost::binary_search(sorted_erased, rec);
 		};
 
 		boost::remove_erase_if(m_store, todel);

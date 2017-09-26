@@ -17,7 +17,7 @@ namespace viewed
 		Functor func;
 
 		template <class ... Args>
-		bool operator()(Args && ... args) const
+		auto operator()(Args && ... args) const
 		{
 			using std::get;
 			return func(get<Index>(std::forward<Args>(args))...);

@@ -238,6 +238,13 @@ namespace viewed
 		// left updated and inserted than merged to m_store, also merge operation permutates index_array, 
 		// which is used to update qt persistent indexes
 
+		// updated part must be sorted by pointer addr
+		assert(std::is_sorted(first_updated, first_inserted));
+		// currently just assume first always is beginning of m_store
+		assert(first == m_store.begin());
+
+		auto fpred = [this](auto ptr) { return m_filter_pred(*ptr); };
+
 		int_vector index_array, affected_indexes;
 		int_vector::iterator removed_first, removed_last, changed_first, changed_last;
 		std::size_t middle_sz = first_updated - first;
@@ -245,9 +252,17 @@ namespace viewed
 		
 		removed_first = removed_last = changed_first = changed_last = affected_indexes.begin();
 		bool order_changed = false;
-
-		// there are updated
-		if (first_updated != first_inserted)
+		
+		if (first_updated == first_inserted)
+		{
+			// only inserts
+			if (m_filter_pred)
+			{
+				last = std::remove_if(first_inserted, last, fpred);
+				m_store.resize(last - first);
+			}
+		}
+		else // there are updates
 		{
 			affected_indexes.resize(first_inserted - first_updated);
 			removed_first = affected_indexes.begin();
@@ -258,17 +273,20 @@ namespace viewed
 			middle = first_updated;
 			middle_sz = middle - first;
 
-			auto test_and_mark = [new_first = middle, new_last = last](const_pointer ptr)
+			auto last_updated = first_inserted;
+			auto last_inserted = last;
+
+			auto test_and_mark = [first_updated, last_updated](const_pointer ptr)
 			{
-				auto it = std::lower_bound(new_first, new_last, ptr);
-				if (it == new_last) return false; 
-				if (ptr != *it)     return false;
+				auto it = std::lower_bound(first_updated, last_updated, ptr);
+				if (it == last_updated) return false;
+				if (ptr != *it)         return false;
 
 				mark_pointer(*it);
 				return true;
 			};
 
-			for (auto it = std::find_if(first, middle, test_and_mark); it != middle; it = std::find_if(it, middle, test_and_mark))
+			for (auto it = std::find_if(first, middle, test_and_mark); it != middle; it = std::find_if(++it, middle, test_and_mark))
 			{
 				int row = static_cast<int>(it - first);
 				bool passes = !m_filter_pred || m_filter_pred(**it);
@@ -279,10 +297,15 @@ namespace viewed
 
 			//emit_changed(changed_first, changed_last);
 			order_changed = changed_first != changed_last;
-
+			
 			middle = viewed::remove_indexes(first, middle, removed_first, removed_last);
-			last = std::copy_if(first + middle_sz, first_inserted, middle, [](auto ptr) { return !is_marked(ptr); });
-			last = std::copy(first_inserted, m_store.end(), last);
+			last = std::copy_if(first_updated, last_updated, middle, 
+			                    [fpred](auto ptr) { return not is_marked(ptr) and fpred(ptr); });
+			
+			if (m_filter_pred)
+				last = std::copy_if(first_inserted, last_inserted, last, fpred);
+			else
+				last = std::copy(first_inserted, last_inserted, last);
 			
 			middle_sz = middle - first;
 			m_store.resize(last - first);
@@ -420,7 +443,7 @@ namespace viewed
 		auto first = m_store.begin();
 		auto last = m_store.end();
 
-		for (auto it = std::find_if(first, last, test); it != last; it = std::find_if(it, last, test))
+		for (auto it = std::find_if(first, last, test); it != last; it = std::find_if(++it, last, test))
 			*erased_last++ = static_cast<int>(it - first);
 
 		auto * model = get_model();
@@ -439,13 +462,13 @@ namespace viewed
 	void sfview_qtbase<Container, SortPred, FilterPred>::refilter_full()
 	{
 		auto sz = m_store.size();
-		m_store.resize(sz * 2);
+		boost::push_back(m_store, *m_owner | boost::adaptors::transformed(make_pointer));
 
 		auto first = m_store.begin();
-		auto last = m_store.begin();
+		auto last = m_store.end();
 		auto first_updated = first + sz;
-		std::copy(first, first_updated, first_updated);
+		std::sort(first_updated, last);
 
-		upsert_store(first, first_updated, first_updated, last);
+		upsert_store(first, first_updated, last, last);
 	}
 }
