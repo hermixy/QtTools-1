@@ -15,8 +15,8 @@
 #include <ext/algorithm.hpp>
 #include <ext/iterator/zip_iterator.hpp>
 
-#include <ext/varalgo/sorting_algo.hpp>
-#include <ext/varalgo/on_sorted_algo.hpp>
+#include <varalgo/sorting_algo.hpp>
+#include <varalgo/on_sorted_algo.hpp>
 
 namespace viewed
 {
@@ -369,9 +369,9 @@ namespace viewed
 	{
 		auto comp = make_indirect_fun(m_sort_pred);
 
-		if (resort_old) ext::varalgo::stable_sort(first, middle, comp);
-		ext::varalgo::sort(middle, last, comp);
-		ext::varalgo::inplace_merge(first, middle, last, comp);
+		if (resort_old) varalgo::stable_sort(first, middle, comp);
+		varalgo::sort(middle, last, comp);
+		varalgo::inplace_merge(first, middle, last, comp);
 	}
 
 	template <class Container, class SortPred, class FilterPred>
@@ -389,16 +389,16 @@ namespace viewed
 		auto zmiddle = ext::make_zip_iterator(middle, imiddle);
 		auto zlast   = ext::make_zip_iterator(last, ilast);
 
-		if (resort_old) ext::varalgo::stable_sort(zfirst, zmiddle, comp);
-		ext::varalgo::sort(zmiddle, zlast, comp);
-		ext::varalgo::inplace_merge(zfirst, zmiddle, zlast, comp);
+		if (resort_old) varalgo::stable_sort(zfirst, zmiddle, comp);
+		varalgo::sort(zmiddle, zlast, comp);
+		varalgo::inplace_merge(zfirst, zmiddle, zlast, comp);
 	}
 
 	template <class Container, class SortPred, class FilterPred>
 	void sfview_qtbase<Container, SortPred, FilterPred>::sort(store_iterator first, store_iterator last)
 	{
 		auto comp = make_indirect_fun(m_sort_pred);
-		ext::varalgo::stable_sort(first, last, comp);
+		varalgo::stable_sort(first, last, comp);
 	}
 
 	template <class Container, class SortPred, class FilterPred>
@@ -410,7 +410,7 @@ namespace viewed
 
 		auto zfirst = ext::make_zip_iterator(first, ifirst);
 		auto zlast = ext::make_zip_iterator(last, ilast);
-		ext::varalgo::stable_sort(zfirst, zlast, comp);
+		varalgo::stable_sort(zfirst, zlast, comp);
 	}
 
 	template <class Container, class SortPred, class FilterPred>
@@ -437,7 +437,7 @@ namespace viewed
 	auto sfview_qtbase<Container, SortPred, FilterPred>::search_hint(const_pointer ptr) const -> search_hint_type
 	{
 		auto comp = make_indirect_fun(m_sort_pred);
-		return ext::varalgo::equal_range(m_store, ptr, comp);
+		return varalgo::equal_range(m_store, ptr, comp);
 	}
 
 	template <class Container, class SortPred, class FilterPred>
