@@ -3,11 +3,10 @@
 #include <ext/range/range_traits.hpp>
 #include <viewed/qt_model.hpp>
 #include <viewed/view_base.hpp>
+#include <viewed/algorithm.hpp>
 
-#include <boost/iterator/indirect_iterator.hpp>
 #include <boost/range/algorithm_ext.hpp>
 #include <boost/range/adaptor/transformed.hpp>
-#include <boost/signals2/connection.hpp>
 
 namespace viewed
 {
@@ -63,13 +62,16 @@ namespace viewed
 		/// container event handlers, those are called on container signals, 
 		/// you could reimplement them to provide proper handling of your view
 		
-		/// called when new data is upserted in owning container
+		/// called when new data is updated in owning container
 		/// view have to synchronize itself.
 		/// @Param sorted_newrecs range of pointers to updated records, sorted by pointer value
 		/// 
-		/// default implementation, appends inserted new records, and does nothing with sorted_updated
-		/// calls qt beginInsertRows/endInsertRows
-		virtual void upsert_newdata(const signal_range_type & sorted_updated, const signal_range_type & inserted) override;
+		/// default implementation removes erased, appends inserted records, and does nothing with sorted_updated
+		/// emits qt beginInsertRows/endInsertRows
+		virtual void update_data(
+			const signal_range_type & sorted_erased,
+			const signal_range_type & sorted_updated, 
+			const signal_range_type & inserted) override;
 
 		/// called when some records are erased from container
 		/// view have to synchronize itself.
@@ -83,7 +85,7 @@ namespace viewed
 		/// calls qt beginResetModel/endResetModel
 		virtual void clear_view() override;
 		
-	protected:
+	public:
 		view_qtbase(container_type * owner) : base_type(owner) { }
 		virtual ~view_qtbase() = default;
 
@@ -152,17 +154,53 @@ namespace viewed
 	}
 
 	template <class Container>
-	void view_qtbase<Container>::upsert_newdata(const signal_range_type & sorted_updated, const signal_range_type & inserted)
+	void view_qtbase<Container>::update_data(
+		const signal_range_type & sorted_erased,
+		const signal_range_type & sorted_updated, 
+		const signal_range_type & inserted)
 	{
-		if (inserted.empty()) return;
+		if (sorted_erased.empty())
+		{
+			if (inserted.empty()) return;
 
-		int first = static_cast<int>(m_store.size());
-		int last  = static_cast<int>(m_store.size() + inserted.size() - 1);
+			int first = static_cast<int>(m_store.size());
+			int last  = static_cast<int>(m_store.size() + inserted.size() - 1);
 		
-		auto * model = get_model();
-		model->beginInsertRows(model_type::invalid_index, first, last);
-		base_type::upsert_newdata(sorted_updated, inserted);
-		model->endInsertRows();
+			auto * model = get_model();
+			model->beginInsertRows(model_type::invalid_index, first, last);
+			boost::push_back(m_store, inserted);
+			model->endInsertRows();
+		}
+		else
+		{
+			auto test = [&sorted_erased](const_pointer ptr)
+			{
+				return boost::binary_search(sorted_erased, ptr);
+			};
+
+			int_vector affected_indexes(sorted_erased.size());
+			auto erased_first = affected_indexes.begin();
+			auto erased_last = erased_first;
+			auto first = m_store.begin();
+			auto last = m_store.end();
+
+			for (auto it = std::find_if(first, last, test); it != last; it = std::find_if(++it, last, test))
+				*erased_last++ = static_cast<int>(it - first);
+
+			auto * model = get_model();
+			Q_EMIT model->layoutAboutToBeChanged(model_type::empty_model_list, model->VerticalSortHint);
+
+			auto index_map = viewed::build_relloc_map(erased_first, erased_last, m_store.size());
+			change_indexes(index_map.begin(), index_map.end(), 0);
+
+			last = viewed::remove_indexes(first, last, erased_first, erased_last);
+			
+			auto old_sz = last - first;
+			m_store.resize(old_sz + inserted.size());
+			boost::copy(inserted, m_store.begin() + old_sz);
+
+			Q_EMIT model->layoutChanged(model_type::empty_model_list, model->VerticalSortHint);
+		}
 	}
 
 	template <class Container>
@@ -175,7 +213,7 @@ namespace viewed
 			return boost::binary_search(sorted_erased, ptr);
 		};
 
-		std::vector<int> affected_indexes(sorted_erased.size());
+		int_vector affected_indexes(sorted_erased.size());
 		auto erased_first = affected_indexes.begin();
 		auto erased_last = erased_first;
 		auto first = m_store.begin();

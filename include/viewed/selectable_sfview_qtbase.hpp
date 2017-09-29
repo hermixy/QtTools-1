@@ -1,12 +1,10 @@
 #pragma once
-#include <cassert>
 #include <viewed/sfview_qtbase.hpp>
-#include <boost/container/flat_set.hpp>
 #include <ext/algorithm/slide.hpp>
+#include <boost/container/flat_set.hpp>
 
 namespace viewed
 {
-
 	/// see also view_base description for more information
 	/// 
 	/// selectable_sfview_qtbase is sorted and filtered based on provided SortPred, FilterPred.
@@ -342,7 +340,7 @@ namespace viewed
 
 	template <class Container, class SortPred, class FilterPred>
 	void selectable_sfview_qtbase<Container, SortPred, FilterPred>::
-		merge_newdata(store_iterator first, store_iterator middle, store_iterator last, bool resort_old = true)
+		merge_newdata(store_iterator first, store_iterator middle, store_iterator last, bool resort_old)
 	{
 		if (m_partition_by_selection)
 			return partition(first, last);
@@ -354,7 +352,7 @@ namespace viewed
 	void selectable_sfview_qtbase<Container, SortPred, FilterPred>::
 		merge_newdata(store_iterator first, store_iterator middle, store_iterator last,
 		              int_vector::iterator ifirst, int_vector::iterator imiddle, int_vector::iterator ilast,
-		              bool resort_old = true)
+		              bool resort_old)
 	{
 		if (m_partition_by_selection)
 			return partition(first, last, ifirst, ilast);

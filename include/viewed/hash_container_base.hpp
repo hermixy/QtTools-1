@@ -121,12 +121,6 @@ namespace viewed
 		template <class CompatibleKey>
 		std::pair<const_iterator, const_iterator> equal_range(const CompatibleKey & key) const
 		{ return base_type::m_store.equal_range(key); }
-
-		// bring base overloads
-		using base_type::erase;
-
-		template <class CompatibleKey>
-		size_type erase(const CompatibleKey & key) { return base_type::m_store.erase(key); }
 		
 	public:
 		hash_container_base(hasher hash = {}, key_equal eq = {})

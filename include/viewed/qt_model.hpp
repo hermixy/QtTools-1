@@ -7,6 +7,7 @@ namespace viewed
 	{
 		typedef QAbstractItemModel base_type;
 
+		// bring to public from protected
 	public:
 		using base_type::beginResetModel;
 		using base_type::endResetModel;

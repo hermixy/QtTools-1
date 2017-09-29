@@ -120,12 +120,6 @@ namespace viewed
 		std::pair<const_iterator, const_iterator> equal_range(const CompatibleKey & key) const
 		{ return base_type::m_store.equal_range(key); }
 
-		// bring base overloads
-		using base_type::erase;
-
-		template <class CompatibleKey>
-		size_type erase(const CompatibleKey & key) { return base_type::m_store.erase(key); }
-
 	public:
 		ordered_container_base(key_compare comp = {})
 			: base_type(base_type::traits_type(), std::move(comp)) {}

@@ -59,11 +59,12 @@ namespace viewed
 		typedef implementation-defined connection;
 		typedef implementation-defined scoped_connection;
 
-		/// signal is emitted after new data is upserted into container, with 2 ranges of pointers. 
-		///  * 1st points to elements that were updated, sorted by pointer value
-		///  * 2nd to newly inserted, order is unspecified
-		///  signature: void(signal_range_type sorted_updated, signal_range_type inserted)
-		typedef implementation-defined upsert_signal_type;
+		/// signal is emitted in process of updating data in container(after update/insert, before erase) with 3 ranges of pointers.
+		///  * 1st to erased elements, sorted by pointer value
+		///  * 2nd points to elements that were updated, sorted by pointer value
+		///  * 3rd to newly inserted, order is unspecified
+		///  signature: void(signal_range_type sorted_erased, signal_range_type sorted_updated, signal_range_type inserted)
+		typedef implementation-defined update_signal_type;
 
 		/// signal is emitted before data is erased from container, 
 		/// with range of pointers to elements to erase, sorted by pointer value
@@ -78,7 +79,7 @@ namespace viewed
 
 	/// Base container class build on top of some defined by traits associative container
 	/// You are expected to inherit it and add more functional.
-	/// Generic container with stl compatible interface
+	/// Generic container with STL compatible interface
 	///
 	/// It store data in store specified by traits
 	/// iterators can be unstable, pointers and references - have to be stable
@@ -128,14 +129,14 @@ namespace viewed
 		typedef typename signal_traits::scoped_connection   scoped_connection;
 
 		typedef typename signal_traits::signal_range_type   signal_range_type;
-		typedef typename signal_traits::upsert_signal_type  upsert_signal_type;
+		typedef typename signal_traits::update_signal_type  update_signal_type;
 		typedef typename signal_traits::erase_signal_type   erase_signal_type;
 		typedef typename signal_traits::clear_signal_type   clear_signal_type;
 
 	protected:
 		main_store_type m_store;
 
-		upsert_signal_type m_upsert_signal;
+		update_signal_type m_update_signal;
 		erase_signal_type  m_erase_signal;
 		clear_signal_type  m_clear_signal;
 
@@ -155,21 +156,27 @@ namespace viewed
 
 		/// signals
 		template <class... Args> connection on_erase(Args && ... args)  { return m_erase_signal.connect(std::forward<Args>(args)...); }
-		template <class... Args> connection on_upsert(Args && ... args) { return m_upsert_signal.connect(std::forward<Args>(args)...); }
+		template <class... Args> connection on_update(Args && ... args) { return m_update_signal.connect(std::forward<Args>(args)...); }
 		template <class... Args> connection on_clear(Args && ... args)  { return m_clear_signal.connect(std::forward<Args>(args)...); }
+
+	protected:
+		static void mark_pointer(const_pointer & ptr) { reinterpret_cast<std::uintptr_t &>(ptr) |= 1; }
+		static bool is_marked(const_pointer ptr) { return reinterpret_cast<std::uintptr_t>(ptr) & 1; }
 
 	protected:
 		/// finds and updates or appends elements from [first; last) into internal store m_store
 		/// those elements also placed into upserted_recs for further notifications of views
 		template <class SinglePassIterator>
-		void upsert_newrecs(SinglePassIterator first, SinglePassIterator last,
-							signal_store_type & updated, signal_store_type & inserted);
+		void upsert_newrecs(SinglePassIterator first, SinglePassIterator last);
+
+		template <class SinglePassIterator>
+		void assign_newrecs(SinglePassIterator first, SinglePassIterator last);
 
 		/// erases elements [first, last) from attached views
 		void erase_from_views(const_iterator first, const_iterator last);
 
-		/// notifies views about new data 
-		void merge_newdata_into_views(signal_store_type & updated, signal_store_type & inserted);
+		/// notifies views about update
+		void notify_views(signal_store_type & erased, signal_store_type & updated, signal_store_type & inserted);
 
 	public:
 		/// erases all elements
@@ -179,6 +186,9 @@ namespace viewed
 		const_iterator erase(const_iterator first, const_iterator last);
 		/// erase element pointed by it
 		const_iterator erase(const_iterator it) { return erase(it, std::next(it)); }
+		/// erase element by key
+		template <class CompatibleKey>
+		size_type erase(const CompatibleKey & key);
 
 		/// upserts new record from [first, last)
 		/// records which are already in container will be replaced with new ones
@@ -208,9 +218,9 @@ namespace viewed
 	template <class Type, class Traits, class SignalTraits>
 	template <class SinglePassIterator>
 	void associative_conatiner_base<Type, Traits, SignalTraits>::upsert_newrecs
-		(SinglePassIterator first, SinglePassIterator last,
-		 signal_store_type & updated, signal_store_type & inserted)
+		(SinglePassIterator first, SinglePassIterator last)
 	{
+		signal_store_type erased, updated, inserted;
 		ext::try_reserve(updated, first, last);
 		ext::try_reserve(inserted, first, last);
 
@@ -222,14 +232,68 @@ namespace viewed
 			bool inserted_into_store;
 			std::tie(where, inserted_into_store) = m_store.insert(std::forward<decltype(val)>(val));
 
-			if (inserted_into_store) {
-				inserted.push_back(traits_type::get_pointer(*where));
+			auto * ptr = traits_type::get_pointer(*where);
+			if (inserted_into_store) 
+			{
+				inserted.push_back(ptr);
 			}
-			else {
+			else 
+			{
 				traits_type::update(const_cast<value_type &>(*where), std::forward<decltype(val)>(val));
-				updated.push_back(traits_type::get_pointer(*where));
+				updated.push_back(ptr);
 			}
 		}
+
+		std::sort(updated.begin(), updated.end());
+		notify_views(erased, updated, inserted);
+	}
+
+	template <class Type, class Traits, class SignalTraits>
+	template <class SinglePassIterator>
+	void associative_conatiner_base<Type, Traits, SignalTraits>::assign_newrecs
+		(SinglePassIterator first, SinglePassIterator last)
+	{
+		signal_store_type erased, updated, inserted;
+		ext::try_reserve(updated, first, last);
+		ext::try_reserve(inserted, first, last);
+
+		erased.resize(m_store.size());
+
+		auto erased_first = erased.begin();
+		auto erased_last = erased.end();
+		std::transform(m_store.begin(), m_store.end(), erased_first, traits_type::get_pointer);
+		std::sort(erased_first, erased_last);
+
+		for (; first != last; ++first)
+		{
+			auto && val = *first;
+
+			typename main_store_type::const_iterator where;
+			bool inserted_into_store;
+			std::tie(where, inserted_into_store) = m_store.insert(std::forward<decltype(val)>(val));
+
+			auto * ptr = traits_type::get_pointer(*where);
+			if (inserted_into_store)
+			{
+				inserted.push_back(ptr);
+			}
+			else
+			{
+				traits_type::update(const_cast<value_type &>(*where), std::forward<decltype(val)>(val));
+				updated.push_back(ptr);
+
+				// remove found item from erase list
+				auto it = std::lower_bound(erased_first, erased_last, ptr);
+				if (it != erased_last and *it == ptr) mark_pointer(*it);
+			}
+		}
+
+		erased_last = std::remove_if(erased_first, erased_last, is_marked);
+		erased.erase(erased_last, erased.end());
+		std::sort(updated.begin(), updated.end());
+		notify_views(erased, updated, inserted);
+
+		for (auto * ptr : erased) m_store.erase(*ptr);
 	}
 
 	template <class Type, class Traits, class SignalTraits>
@@ -251,12 +315,13 @@ namespace viewed
 	}
 
 	template <class Type, class Traits, class SignalTraits>
-	void associative_conatiner_base<Type, Traits, SignalTraits>::merge_newdata_into_views(signal_store_type & updated, signal_store_type & inserted)
+	void associative_conatiner_base<Type, Traits, SignalTraits>::notify_views
+		(signal_store_type & erased, signal_store_type & updated, signal_store_type & inserted)
 	{
-		std::sort(updated.begin(), updated.end());
 		auto urr = signal_traits::make_range(updated.data(), updated.data() + updated.size());
 		auto irr = signal_traits::make_range(inserted.data(), inserted.data() + inserted.size());
-		m_upsert_signal(urr, irr);
+		auto err = signal_traits::make_range(erased.data(), erased.data() + erased.size());
+		m_update_signal(err, urr, irr);
 	}
 
 
@@ -268,26 +333,27 @@ namespace viewed
 	}
 
 	template <class Type, class Traits, class SignalTraits>
-	template <class SinglePassIterator>
-	void associative_conatiner_base<Type, Traits, SignalTraits>::upsert(SinglePassIterator first, SinglePassIterator last)
+	template <class CompatibleKey>
+	auto associative_conatiner_base<Type, Traits, SignalTraits>::erase(const CompatibleKey & key) -> size_type
 	{
-		signal_store_type updated, inserted;
-		upsert_newrecs(first, last, updated, inserted);
-		merge_newdata_into_views(updated, inserted);
+		const_iterator first, last;
+		std::tie(first, last) = m_store.equal_range(key);
+		auto count = std::distance(first, last);
+		erase(first, last);
+		return count;
 	}
 
 	template <class Type, class Traits, class SignalTraits>
 	template <class SinglePassIterator>
-	void associative_conatiner_base<Type, Traits, SignalTraits>::assign(SinglePassIterator first, SinglePassIterator last)
+	inline void associative_conatiner_base<Type, Traits, SignalTraits>::upsert(SinglePassIterator first, SinglePassIterator last)
 	{
-		clear();
+		return upsert_newrecs(first, last);
+	}
 
-		m_store.insert(first, last);
-
-		signal_store_type to_notify, dummy;
-		to_notify.resize(m_store.size());
-		std::transform(m_store.begin(), m_store.end(), to_notify.begin(), traits_type::get_pointer);
-
-		merge_newdata_into_views(dummy, to_notify);
+	template <class Type, class Traits, class SignalTraits>
+	template <class SinglePassIterator>
+	inline void associative_conatiner_base<Type, Traits, SignalTraits>::assign(SinglePassIterator first, SinglePassIterator last)
+	{
+		return assign_newrecs(first, last);
 	}
 }

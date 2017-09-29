@@ -1,13 +1,12 @@
 #pragma once
 #include <vector>
 #include <algorithm>
-#include <numeric>
 
 #include <viewed/refilter_type.hpp>
-#include <viewed/view_qtbase.hpp>
-#include <viewed/indirect_functor.hpp>
-#include <viewed/get_functor.hpp>
 #include <viewed/algorithm.hpp>
+#include <viewed/get_functor.hpp>
+#include <viewed/indirect_functor.hpp>
+#include <viewed/view_qtbase.hpp>
 
 #include <boost/range/algorithm.hpp>
 #include <boost/range/algorithm_ext.hpp>
@@ -60,6 +59,8 @@ namespace viewed
 		using typename base_type::model_type;
 		using typename base_type::int_vector;
 
+		using signal_const_iterator = typename signal_range_type::const_iterator;
+
 		using base_type::m_owner;
 		using base_type::m_store;
 		using base_type::get_model;
@@ -93,16 +94,21 @@ namespace viewed
 		virtual void reinit_view() override;
 
 	protected:
-		/// inserts and merges new and updated records into view, preserving filter/sort order. stable
+		/// adjusts view with erased/updated/inserted data, preserving filter/sort order. stable
 		/// emits appropriate qt signals, uses merge_newdata(iter..., iter..., ...) to calculate index permutations.
-		virtual void upsert_newdata(const signal_range_type & sorted_updated, const signal_range_type & inserted) override;
+		virtual void update_data(
+			const signal_range_type & sorted_erased, 
+			const signal_range_type & sorted_updated, 
+			const signal_range_type & inserted) override;
 		
 	protected:
-		/// merges new and updated records into view, preserving filter/sort order. stable,
+		/// adjusts view with erased/updated/inserted data, preserving filter/sort order. stable,
 		/// new and updated should already be appended to m_store in order: current data..., updated..., inserted...].
 		/// emits appropriate qt signals, uses merge_newdata(iter..., iter..., ...) to calculate index permutations.
-		virtual void upsert_store(store_iterator first, store_iterator first_updated,
-		                          store_iterator first_inserted, store_iterator last);
+		virtual void update_store(
+			store_iterator first, store_iterator first_updated,
+			store_iterator first_inserted, store_iterator last,
+			signal_const_iterator first_erased, signal_const_iterator last_erased);
 
 		/// merges m_store's [middle, last) into [first, last) according to m_sort_pred. stable.
 		/// first, middle, last - is are one range, as in std::inplace_merge
@@ -121,7 +127,7 @@ namespace viewed
 			int_vector::iterator ifirst, int_vector::iterator imiddle, int_vector::iterator ilast,
 			bool resort_old = true);
 
-		/// sorts m_store's [first; last) with m_sort_pred, stable sort		
+		/// sorts m_store's [first; last) with m_sort_pred, stable sort
 		virtual void sort(store_iterator first, store_iterator last);
 		/// sorts m_store's [first; last) with m_sort_pred, stable sort
 		/// range [ifirst; ilast) must be permuted the same way as range [first; last)
@@ -188,8 +194,10 @@ namespace viewed
 	}
 
 	template <class Container, class SortPred, class FilterPred>
-	void sfview_qtbase<Container, SortPred, FilterPred>::
-		upsert_newdata(const signal_range_type & sorted_updated, const signal_range_type & inserted)
+	void sfview_qtbase<Container, SortPred, FilterPred>::update_data(
+		const signal_range_type & sorted_erased,
+		const signal_range_type & sorted_updated,
+		const signal_range_type & inserted)
 	{
 		boost::push_back(m_store, sorted_updated);
 		boost::push_back(m_store, inserted);
@@ -198,13 +206,16 @@ namespace viewed
 		auto last = m_store.end();
 		auto first_inserted = last - inserted.size();
 		auto first_updated = first_inserted - sorted_updated.size();
-		upsert_store(first, first_updated, first_inserted, last);
+
+		update_store(first, first_updated, first_inserted, last,
+		             sorted_erased.begin(), sorted_erased.end());
 	}
 
 	template <class Container, class SortPred, class FilterPred>
-	void sfview_qtbase<Container, SortPred, FilterPred>::
-		upsert_store(store_iterator first, store_iterator first_updated,
-		             store_iterator first_inserted, store_iterator last)
+	void sfview_qtbase<Container, SortPred, FilterPred>::update_store(
+		store_iterator first, store_iterator first_updated,
+		store_iterator first_inserted, store_iterator last,
+		signal_const_iterator first_erased, signal_const_iterator last_erased)
 	{
 		// inserted records can be appended(only those passing filter predicate) to m_store and then merged into via inplace_merge algorithm.
 		// With updated it's more complicated. for every updated record it's filtered state can be changed:
@@ -238,43 +249,55 @@ namespace viewed
 		// left updated and inserted than merged to m_store, also merge operation permutates index_array, 
 		// which is used to update qt persistent indexes
 
-		// updated part must be sorted by pointer addr
-		assert(std::is_sorted(first_updated, first_inserted));
+
 		// currently just assume first always is beginning of m_store
 		assert(first == m_store.begin());
+		// updated part must be sorted by pointer addr
+		assert(std::is_sorted(first_updated, first_inserted));
+		assert(std::is_sorted(first_erased, last_erased));
 
-		auto fpred = [this](auto ptr) { return m_filter_pred(*ptr); };
+		auto     fpred = [this](auto ptr) { return m_filter_pred(*ptr); };
+		auto not_fpred = [this](auto ptr) { return not m_filter_pred(*ptr); };
 
 		int_vector index_array, affected_indexes;
 		int_vector::iterator removed_first, removed_last, changed_first, changed_last;
+		store_iterator middle = first_updated;
 		std::size_t middle_sz = first_updated - first;
-		store_iterator middle;
-		
-		removed_first = removed_last = changed_first = changed_last = affected_indexes.begin();
 		bool order_changed = false;
 		
+		affected_indexes.resize(first_inserted - first_updated + last_erased - first_erased);
+		removed_first = removed_last = affected_indexes.begin();
+		changed_first = changed_last = affected_indexes.end();
+
+		// if there erased ones - erase them from the store
+		if (last_erased != first_erased)
+		{
+			auto test = [first_erased, last_erased](const_pointer ptr)
+			{
+				return std::binary_search(first_erased, last_erased, ptr);
+			};
+			
+			for (auto it = std::find_if(first, last, test); it != last; it = std::find_if(++it, last, test))
+				*removed_last++ = static_cast<int>(it - first);
+
+			middle = viewed::remove_indexes(first, middle, removed_first, removed_last);
+			middle_sz = middle - first;
+		}
+
 		if (first_updated == first_inserted)
 		{
 			// only inserts
 			if (m_filter_pred)
 			{
-				last = std::remove_if(first_inserted, last, fpred);
+				last = std::remove_if(first_inserted, last, not_fpred);
 				m_store.resize(last - first);
 			}
 		}
 		else // there are updates
 		{
-			affected_indexes.resize(first_inserted - first_updated);
-			removed_first = affected_indexes.begin();
-			removed_last = removed_first;
-			changed_first = affected_indexes.end();
-			changed_last = changed_first;
-			
-			middle = first_updated;
-			middle_sz = middle - first;
-
 			auto last_updated = first_inserted;
 			auto last_inserted = last;
+			auto updates_removed_first = removed_last;
 
 			auto test_and_mark = [first_updated, last_updated](const_pointer ptr)
 			{
@@ -298,7 +321,7 @@ namespace viewed
 			//emit_changed(changed_first, changed_last);
 			order_changed = changed_first != changed_last;
 			
-			middle = viewed::remove_indexes(first, middle, removed_first, removed_last);
+			middle = viewed::remove_indexes(first, middle, updates_removed_first, removed_last);
 			last = std::copy_if(first_updated, last_updated, middle, 
 			                    [fpred](auto ptr) { return not is_marked(ptr) and fpred(ptr); });
 			
@@ -437,7 +460,7 @@ namespace viewed
 		
 		auto test = [this](const_pointer ptr) { return !m_filter_pred(*ptr); };
 
-		std::vector<int> affected_indexes(m_store.size());
+		int_vector affected_indexes(m_store.size());
 		auto erased_first = affected_indexes.begin();
 		auto erased_last = erased_first;
 		auto first = m_store.begin();
@@ -469,6 +492,7 @@ namespace viewed
 		auto first_updated = first + sz;
 		std::sort(first_updated, last);
 
-		upsert_store(first, first_updated, last, last);
+		signal_const_iterator noerased {};
+		update_store(first, first_updated, last, last, noerased, noerased);
 	}
 }

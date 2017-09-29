@@ -5,7 +5,6 @@
 #include <boost/iterator/indirect_iterator.hpp>
 #include <boost/range/algorithm_ext.hpp>
 #include <boost/range/adaptor/transformed.hpp>
-#include <boost/signals2/connection.hpp>
 
 namespace viewed
 {
@@ -13,7 +12,7 @@ namespace viewed
 	/// 
 	/// it provides base for other views:
 	///  * vector of pointers
-	///  * stl compatible interface, indirected, not pointers
+	///  * STL compatible interface, indirected, not pointers
 	///  * it connects signals from container to handlers(which are virtual and can be overridden)
 	///    basic implementation does almost nothing, just synchronizes view with data owning container
 	///    derived classes can seal themselves with final on those methods
@@ -21,22 +20,23 @@ namespace viewed
 	/// Main container expected to live as long as view does. View holds only non owning pointers to data
 	/// 
 	/// container must meet following conditions: 
-	/// * stl compatible interface
+	/// * STL compatible interface(types, methods)
 	/// * at least forward iterator category, but pointers/references must be stable, iterators can be unstable
 	/// * have member type:
-	///     signal_range_type, which is a random access range of valid pointers(at least at moment of call) to value_type
-	///                        sorted by pointer value
+	///     signal_range_type - random access range of valid pointers(at least at moment of call) to value_type
+	///                         sorted by pointer value
+	///     scoped_connection - owning signal connection handle, breaks connection in destructor
 	///                        
-	/// * on_upsert member function which connects given functor with boost::signals2 signal and returns connection.
-	///             slot signature is: void (signal_range_type sorted_updated, signal_range_type inserted).
-	///             signal is emitted after new data is upserted into container, with 2 ranges of pointers. 
-	///             1st points to elements that were updated, 2nd to newly inserted.
+	/// * on_update member function which connects given functor with signal and returns connection.
+	///             slot signature is: void (signal_range_type sorted_erased, signal_range_type sorted_updated, signal_range_type inserted).
+	///             signal is emitted in process of updating data in container(after update/insert, before erase) with 3 ranges of pointers. 
+	///             1st points to removed elements, 2nd points to elements that were updated, 3nd to newly inserted.
 	///             
-	/// * on_erase member function which connects given functor with boost::signals2 signal and returns connection.
+	/// * on_erase member function which connects given functor with signal and returns connection.
 	///             slot signature is: void (signal_range_type sorted_recsptr_toremove).
 	///             signal is emitted before data is erased from container, with range of pointers to elements to erase.
 	///             
-	/// * on_clear member function which connects given functor with boost::signals2 signal and returns connection.
+	/// * on_clear member function which connects given functor with signal and returns connection.
 	///             slot signature is: void ().
 	///             signal is emitted before container is cleared.
 	/// 
@@ -45,17 +45,17 @@ namespace viewed
 	/// sorting, filtering, and may be more
 	/// 
 	/// derived classes should implement:
-	///  * upsert_newdata
+	///  * update_data
 	///  * reinit_view
-	///  * clear
+	///  * clear_view
 	///  * erase_records
 	///  * initialization in constructor,
 	///    this class does not connects signals nor initializes store, but provides methods
 	/// (see method declaration for more description)
 	///
 	/// @Param Container class to which this view will connect and listen updates
-	///                  Container must have on_upsert, on_erase, on_clear signal member functions
-	///                  on_upsert, on_erase provide signal_range_type range, 
+	///                  Container must have on_update, on_erase, on_clear signal member functions
+	///                  on_update, on_erase provide signal_range_type range, 
 	///                  random access of pointers to affected elements, 
 	///                  sorted by pointer value
 	template <class Container>
@@ -87,7 +87,7 @@ namespace viewed
 
 		/// raii connections
 		scoped_connection m_clear_con;
-		scoped_connection m_upsert_con;
+		scoped_connection m_update_con;
 		scoped_connection m_erase_con;
 
 	public:
@@ -128,6 +128,14 @@ namespace viewed
 		/// default implementation just copies from owner
 		virtual void reinit_view();
 
+		/// normally should not be called outside of view class.
+		/// Provided, when view class used directly without inheritance, to complete initialization.
+		/// Calls connects signals and calls reinit_view.
+		/// 
+		/// Derived views probably will automatically call it constructor 
+		/// or directly connect_signals/reinit_view
+		virtual void init();
+
 	protected:
 		/// connects container signals to appropriate handlers
 		virtual void connect_signals();
@@ -135,12 +143,15 @@ namespace viewed
 		/// container event handlers, those are called on container signals, 
 		/// you could reimplement them to provide proper handling of your view
 		
-		/// called when new data is upserted in owning container
+		/// called when new data is updated in owning container
 		/// view have to synchronize itself.
 		/// @Param sorted_newrecs range of pointers to updated records, sorted by pointer value
 		/// 
-		/// default implementation, appends inserted new records, and does nothing with sorted_updated
-		virtual void upsert_newdata(const signal_range_type & sorted_updated, const signal_range_type & inserted);
+		/// default implementation removes erased, appends inserted records, and does nothing with sorted_updated
+		virtual void update_data(
+			const signal_range_type & sorted_erased, 
+			const signal_range_type & sorted_updated, 
+			const signal_range_type & inserted);
 
 		/// called when some records are erased from container
 		/// view have to synchronize itself.
@@ -161,7 +172,7 @@ namespace viewed
 		/// where N = m_store.size(), M = recs.size()
 		void sorted_erase_records(const signal_range_type & sorted_erased);
 
-	protected:
+	public:
 		view_base(container_type * owner) : m_owner(owner) { }
 		virtual ~view_base() = default;
 
@@ -178,7 +189,7 @@ namespace viewed
 	void view_base<Container>::connect_signals()
 	{
 		m_clear_con = m_owner->on_clear([this] { clear_view(); });
-		m_upsert_con = m_owner->on_upsert([this](const signal_range_type & u, const signal_range_type & i) { upsert_newdata(u, i); });
+		m_update_con = m_owner->on_update([this](const signal_range_type & e, const signal_range_type & u, const signal_range_type & i) { update_data(e, u, i); });
 		m_erase_con = m_owner->on_erase([this](const signal_range_type & r) { erase_records(r); });
 	}
 
@@ -190,9 +201,34 @@ namespace viewed
 	}
 
 	template <class Container>
-	void view_base<Container>::upsert_newdata(const signal_range_type & sorted_updated, const signal_range_type & inserted)
+	void view_base<Container>::init()
 	{
-		boost::push_back(m_store, inserted);
+		connect_signals();
+		reinit_view();
+	}
+
+	template <class Container>
+	void view_base<Container>::update_data(
+		const signal_range_type & sorted_erased, 
+		const signal_range_type & sorted_updated, 
+		const signal_range_type & inserted)
+	{
+		auto first = m_store.begin();
+		auto last = m_store.end();
+
+		if (not sorted_erased.empty())
+		{
+			auto todel = [&sorted_erased](const_pointer rec)
+			{
+				return boost::binary_search(sorted_erased, rec);
+			};
+
+			last = boost::remove_if(m_store, todel);
+		}
+
+		auto old_sz = last - first;
+		m_store.resize(old_sz + inserted.size());
+		boost::copy(inserted, m_store.begin() + old_sz);
 	}
 
 	template <class Container>
