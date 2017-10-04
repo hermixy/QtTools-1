@@ -13,7 +13,7 @@
 
 namespace QtTools
 {
-	/// вспомогательный класс ListModel
+	/// РІСЃРїРѕРјРѕРіР°С‚РµР»СЊРЅС‹Р№ РєР»Р°СЃСЃ ListModel
 	class ListModel_MimeData : public QMimeData
 	{
 		Q_OBJECT
@@ -34,22 +34,22 @@ namespace QtTools
 	};
 
 
-	/// базовый вспомогательный класс для ListModel, тут шаблонно-независимый код
+	/// Р±Р°Р·РѕРІС‹Р№ РІСЃРїРѕРјРѕРіР°С‚РµР»СЊРЅС‹Р№ РєР»Р°СЃСЃ РґР»СЏ ListModel, С‚СѓС‚ С€Р°Р±Р»РѕРЅРЅРѕ-РЅРµР·Р°РІРёСЃРёРјС‹Р№ РєРѕРґ
 	class ListModelBase : public QAbstractListModel
 	{
 	protected:
 
-		/// данные методы реализуются наследником и вызываются из dropMimeData.
-		/// drop event может произойти между элементами и на элемент,
-		/// так же действие может быть Move/Copy. 
-		/// В зависимости от этих условий вызывается одна из функций.
+		/// РґР°РЅРЅС‹Рµ РјРµС‚РѕРґС‹ СЂРµР°Р»РёР·СѓСЋС‚СЃСЏ РЅР°СЃР»РµРґРЅРёРєРѕРј Рё РІС‹Р·С‹РІР°СЋС‚СЃСЏ РёР· dropMimeData.
+		/// drop event РјРѕР¶РµС‚ РїСЂРѕРёР·РѕР№С‚Рё РјРµР¶РґСѓ СЌР»РµРјРµРЅС‚Р°РјРё Рё РЅР° СЌР»РµРјРµРЅС‚,
+		/// С‚Р°Рє Р¶Рµ РґРµР№СЃС‚РІРёРµ РјРѕР¶РµС‚ Р±С‹С‚СЊ Move/Copy.
+		/// Р’ Р·Р°РІРёСЃРёРјРѕСЃС‚Рё РѕС‚ СЌС‚РёС… СѓСЃР»РѕРІРёР№ РІС‹Р·С‹РІР°РµС‚СЃСЏ РѕРґРЅР° РёР· С„СѓРЅРєС†РёР№.
 		/// 
-		/// QAbstractListModel в случае onto drop переписывает элементы,
-		/// стандартная реализация ListModel поступает так же, 
-		/// но при этом flags НЕ возвращает Qt::ItemIsDropEnabled.
+		/// QAbstractListModel РІ СЃР»СѓС‡Р°Рµ onto drop РїРµСЂРµРїРёСЃС‹РІР°РµС‚ СЌР»РµРјРµРЅС‚С‹,
+		/// СЃС‚Р°РЅРґР°СЂС‚РЅР°СЏ СЂРµР°Р»РёР·Р°С†РёСЏ ListModel РїРѕСЃС‚СѓРїР°РµС‚ С‚Р°Рє Р¶Рµ,
+		/// РЅРѕ РїСЂРё СЌС‚РѕРј flags РќР• РІРѕР·РІСЂР°С‰Р°РµС‚ Qt::ItemIsDropEnabled.
 		/// 
-		/// NOTE: модель никогда не должна удалять строки самостоятельно в случае MoveAction,
-		///       Qt View делает это автоматически всегда после события drop.
+		/// NOTE: РјРѕРґРµР»СЊ РЅРёРєРѕРіРґР° РЅРµ РґРѕР»Р¶РЅР° СѓРґР°Р»СЏС‚СЊ СЃС‚СЂРѕРєРё СЃР°РјРѕСЃС‚РѕСЏС‚РµР»СЊРЅРѕ РІ СЃР»СѓС‡Р°Рµ MoveAction,
+		///       Qt View РґРµР»Р°РµС‚ СЌС‚Рѕ Р°РІС‚РѕРјР°С‚РёС‡РµСЃРєРё РІСЃРµРіРґР° РїРѕСЃР»Рµ СЃРѕР±С‹С‚РёСЏ drop.
 
 		virtual bool DndMoveBefore(QAbstractItemModel & model, const int * idx_first, const int * idx_last, int destRow) = 0;
 		virtual bool DndCopyBefore(QAbstractItemModel & model, const int * idx_first, const int * idx_last, int destRow) = 0;
@@ -58,8 +58,9 @@ namespace QtTools
 
 	public:
 		// drag&drop support
-		Qt::ItemFlags flags(const QModelIndex & index) const override;		
+		Qt::ItemFlags flags(const QModelIndex & index) const override;
 		Qt::DropActions supportedDropActions() const override;
+		Qt::DropActions supportedDragActions() const override;
 		QStringList mimeTypes() const override;
 		QMimeData * mimeData(const QModelIndexList & indexes) const override;
 
@@ -69,14 +70,14 @@ namespace QtTools
 		                  int row, int column, const QModelIndex & parent) override;
 
 	public:
-		ListModelBase(QObject * parent) 
+		ListModelBase(QObject * parent)
 			: QAbstractListModel(parent) {}
 	};
 
 
-	/// Реализация модели списка, подобно QStringListModel, только для любого типа.
-	/// @Param Type тип элементов, должен быть совместимым с QVariant и Container
-	/// @Param Container std::vector совместимый контейнер, например QVector
+	/// Р РµР°Р»РёР·Р°С†РёСЏ РјРѕРґРµР»Рё СЃРїРёСЃРєР°, РїРѕРґРѕР±РЅРѕ QStringListModel, С‚РѕР»СЊРєРѕ РґР»СЏ Р»СЋР±РѕРіРѕ С‚РёРїР°.
+	/// @Param Type С‚РёРї СЌР»РµРјРµРЅС‚РѕРІ, РґРѕР»Р¶РµРЅ Р±С‹С‚СЊ СЃРѕРІРјРµСЃС‚РёРјС‹Рј СЃ QVariant Рё Container
+	/// @Param Container std::vector СЃРѕРІРјРµСЃС‚РёРјС‹Р№ РєРѕРЅС‚РµР№РЅРµСЂ, РЅР°РїСЂРёРјРµСЂ QVector
 	template <class Type, template <class...> class Container = QVector>
 	class ListModel : public ListModelBase
 	{
@@ -199,7 +200,7 @@ namespace QtTools
 		int i = 0;
 		for (int idx : index_array)
 		{
-			if (idx != -1) 
+			if (idx != -1)
 				changePersistentIndex(index(idx), index(i));
 			++i;
 		}
@@ -360,6 +361,10 @@ namespace QtTools
 		{
 			int idx = *idx_first;
 			int offset = idx - min;
+
+			if (destRow + offset >= m_data.size())
+				break;
+
 			m_data[destRow + offset] = std::move(model.m_data[idx]);
 		}
 
@@ -376,6 +381,10 @@ namespace QtTools
 		{
 			int idx = *idx_first;
 			int offset = idx - min;
+
+			if (destRow + offset >= m_data.size())
+				break;
+
 			m_data[destRow + offset] = model.m_data[idx];
 		}
 
@@ -395,6 +404,10 @@ namespace QtTools
 		{
 			int idx = *idx_first;
 			int offset = idx - min;
+
+			if (destRow + offset >= m_data.size())
+				break;
+
 			m_data[destRow + offset] = qvariant_cast<value_type>(model.index(idx, 0, parent).data(Qt::DisplayRole));
 		}
 
@@ -414,6 +427,10 @@ namespace QtTools
 		{
 			int idx = *idx_first;
 			int offset = idx - min;
+			
+			if (destRow + offset >= m_data.size())
+				break;
+
 			m_data[destRow + offset] = qvariant_cast<value_type>(model.index(idx, 0, parent).data(Qt::DisplayRole));
 		}
 
@@ -429,5 +446,4 @@ namespace QtTools
 	template <class Type, template <class...> class Container>
 	ListModel<Type, Container>::ListModel(container_type values, QObject * parent /* = nullptr */)
 		: base_type(parent), m_data(std::move(values)) {}
-
 }

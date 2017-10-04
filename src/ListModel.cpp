@@ -34,6 +34,11 @@ namespace QtTools
 		return Qt::MoveAction | Qt::CopyAction;
 	}
 
+	Qt::DropActions ListModelBase::supportedDragActions() const
+	{
+		return Qt::MoveAction | Qt::CopyAction;
+	}
+
 	QStringList ListModelBase::mimeTypes() const
 	{
 		return ListModel_MimeData::MimeFormats;
