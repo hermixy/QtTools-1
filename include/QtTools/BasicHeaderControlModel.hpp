@@ -176,41 +176,16 @@ namespace QtTools
 		{ return seqit - m_sectionContainer.begin(); }
 		
 		/// получает визуальный индекс по коду
-		int VisualIndexFromIt(BySeqViewConstIterator seqit) const
-		{
-			auto first = m_sectionContainer.begin();
-			int count = 0;
-			for (; first != seqit; ++first)
-				if (IsPresent(*first)) ++count;
-			return count;
-		}
+		int VisualIndexFromIt(BySeqViewConstIterator seqit) const;
 
 	public:
 		/// получает внутренний индекс по визуальному индексу QHeaderView
 		/// NOTE: спрятанные секции не исчезают из нумерации
-		int VisualIndexToIndex(int visualIndex) const
-		{
-			auto first = m_sectionContainer.begin();
-			auto it = first;
-			for (; visualIndex; ++it)
-				if (IsPresent(*it)) --visualIndex;
-
-			return qint(it - first);
-		}
-
+		int VisualIndexToIndex(int visualIndex) const;
 		/// получает визуальный индекс отслеживаемой QHeaderView по внутреннему
 		/// (если отслеживаемой модели нет - это индекс по порядку)
 		/// NOTE: спрятанные секции не исчезают из нумерации
-		int VisualIndexFromIndex(int internalIndex) const
-		{
-			auto first = m_sectionContainer.begin();
-			auto last = first + internalIndex;
-			int visualIndex = 0;
-			for (; first != last; ++first)
-				if (IsPresent(*first)) ++visualIndex;
-
-			return visualIndex;
-		}
+		int VisualIndexFromIndex(int internalIndex) const;
 
 	protected: //core methods
 		/// перемещает колонку идентифицируемую итератором в destinationChild
@@ -264,6 +239,7 @@ namespace QtTools
 		// drag&drop support
 		// поддерживается только внутреннее перемещение, тип mime - implementation defined
 		Qt::DropActions supportedDropActions() const override;
+		Qt::DropActions supportedDragActions() const override;
 		QStringList mimeTypes() const override;
 		QMimeData * mimeData(const QModelIndexList & indexes) const override;
 
@@ -349,6 +325,42 @@ namespace QtTools
 		BasicHeaderControlModel(int codeRole, QObject * parent = nullptr) 
 			: base_type(parent), m_codeRole(codeRole), m_delayedHelper(this) { }
 	};
+
+	/************************************************************************/
+	/*                    Index methods                                     */
+	/************************************************************************/
+	template <class SectionInfoTraits, class BaseModel>
+	int BasicHeaderControlModel<SectionInfoTraits, BaseModel>::VisualIndexFromIt(BySeqViewConstIterator seqit) const
+	{
+		auto first = m_sectionContainer.begin();
+		int count = 0;
+		for (; first != seqit; ++first)
+			if (IsPresent(*first)) ++count;
+		return count;
+	}
+
+	template <class SectionInfoTraits, class BaseModel>
+	int BasicHeaderControlModel<SectionInfoTraits, BaseModel>::VisualIndexToIndex(int visualIndex) const
+	{
+		auto first = m_sectionContainer.begin();
+		auto it = first;
+		for (; visualIndex; ++it)
+			if (IsPresent(*it)) --visualIndex;
+
+		return qint(it - first);
+	}
+
+	template <class SectionInfoTraits, class BaseModel>
+	int BasicHeaderControlModel<SectionInfoTraits, BaseModel>::VisualIndexFromIndex(int internalIndex) const
+	{
+		auto first = m_sectionContainer.begin();
+		auto last = first + internalIndex;
+		int visualIndex = 0;
+		for (; first != last; ++first)
+			if (IsPresent(*first)) ++visualIndex;
+
+		return visualIndex;
+	}
 
 	/************************************************************************/
 	/*                    Core methods                                      */
@@ -580,6 +592,12 @@ namespace QtTools
 	/************************************************************************/
 	template <class SectionInfoTraits, class BaseModel>
 	Qt::DropActions BasicHeaderControlModel<SectionInfoTraits, BaseModel>::supportedDropActions() const
+	{
+		return Qt::MoveAction;
+	}
+
+	template <class SectionInfoTraits, class BaseModel>
+	Qt::DropActions BasicHeaderControlModel<SectionInfoTraits, BaseModel>::supportedDragActions() const
 	{
 		return Qt::MoveAction;
 	}
