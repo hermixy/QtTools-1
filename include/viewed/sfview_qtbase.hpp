@@ -269,23 +269,19 @@ namespace viewed
 		removed_first = removed_last = affected_indexes.begin();
 		changed_first = changed_last = affected_indexes.end();
 
-		// if there erased ones - erase them from the store
-		if (last_erased != first_erased)
-		{
-			auto test = [first_erased, last_erased](const_pointer ptr)
-			{
-				return std::binary_search(first_erased, last_erased, ptr);
-			};
-			
-			for (auto it = std::find_if(first, last, test); it != last; it = std::find_if(++it, last, test))
-				*removed_last++ = static_cast<int>(it - first);
-
-			middle = viewed::remove_indexes(first, middle, removed_first, removed_last);
-			middle_sz = middle - first;
-		}
 
 		if (first_updated == first_inserted)
 		{
+			// if there erased ones - erase them from the store
+			for (auto it = first; it != middle; ++it)
+			{
+				if (std::binary_search(first_erased, last_erased, *it))
+					*removed_last++ = static_cast<int>(it - first);
+			}
+
+			middle = viewed::remove_indexes(first, middle, removed_first, removed_last);
+			middle_sz = middle - first;
+
 			// only inserts
 			if (m_filter_pred)
 			{
@@ -297,31 +293,31 @@ namespace viewed
 		{
 			auto last_updated = first_inserted;
 			auto last_inserted = last;
-			auto updates_removed_first = removed_last;
 
-			auto test_and_mark = [first_updated, last_updated](const_pointer ptr)
+			for (auto it = first; it != middle; ++it)
 			{
-				auto it = std::lower_bound(first_updated, last_updated, ptr);
-				if (it == last_updated) return false;
-				if (ptr != *it)         return false;
+				auto ptr = *it;
+				if (std::binary_search(first_erased, last_erased, ptr))
+					*removed_last++ = static_cast<int>(it - first);
+				else
+				{
+					auto found = std::lower_bound(first_updated, last_updated, ptr);
+					if (found == last_updated) continue;
+					if (ptr != *found) continue;
 
-				mark_pointer(*it);
-				return true;
-			};
+					mark_pointer(*found);
+					int row = static_cast<int>(it - first);
+					bool passes = !m_filter_pred || m_filter_pred(*ptr);
 
-			for (auto it = std::find_if(first, middle, test_and_mark); it != middle; it = std::find_if(++it, middle, test_and_mark))
-			{
-				int row = static_cast<int>(it - first);
-				bool passes = !m_filter_pred || m_filter_pred(**it);
-
-				if (passes)   *--changed_first = row;
-				else          *removed_last++  = row;
+					if (passes)   *--changed_first = row;
+					else          *removed_last++ = row;
+				}
 			}
 
 			//emit_changed(changed_first, changed_last);
 			order_changed = changed_first != changed_last;
 			
-			middle = viewed::remove_indexes(first, middle, updates_removed_first, removed_last);
+			middle = viewed::remove_indexes(first, middle, removed_first, removed_last);
 			last = std::copy_if(first_updated, last_updated, middle, 
 			                    [fpred](auto ptr) { return not is_marked(ptr) and fpred(ptr); });
 			
