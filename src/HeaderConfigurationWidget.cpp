@@ -59,7 +59,7 @@ namespace QtTools
 		        m_searchEdit, static_cast<void (QLineEdit::*)()>(&QLineEdit::setFocus));		
 		connect(m_searchEdit, &QLineEdit::textChanged, this, &HeaderConfigurationWidget::OnFilterChanged);
 		
-		connect(m_clearButton, &QToolButton::clicked, m_model, &HeaderControlModel::Reset);
+		connect(m_resetButton, &QToolButton::clicked, m_model, &HeaderControlModel::Reset);
 		connect(m_eraseNonPresentButton, &QToolButton::clicked, m_model, &HeaderControlModel::EraseNonPresent);
 
 		connect(m_toggleSelectedButton, &QToolButton::clicked, this, &HeaderConfigurationWidget::OnToggleSelected);		
@@ -84,20 +84,22 @@ namespace QtTools
 			m_horizontalLayout->addItem(m_horizontalSpacer);
 
 			// buttons
-			m_clearButton = new QToolButton(this);
+			m_resetButton = new QToolButton(this);
 			m_eraseNonPresentButton = new QToolButton(this);
 			m_toggleSelectedButton = new QToolButton(this);
 			m_upEntryButton = new QToolButton(this);
 			m_downEntryButton = new QToolButton(this);
+			
+			auto * style = this->style();
 
 			//set icons
-			m_clearButton->setIcon(QIcon(":/icons/edit_reset.ico"));
-			m_eraseNonPresentButton->setIcon(QIcon(":/icons/edit_clear.ico"));
-			m_toggleSelectedButton->setIcon(QIcon(":/icons/form_input_checkbox.ico"));
-			m_upEntryButton->setIcon(QIcon(":/icons/arrow_up.ico"));
-			m_downEntryButton->setIcon(QIcon(":/icons/arrow_down.ico"));
+			m_toggleSelectedButton->setIcon(style->standardIcon(QStyle::SP_DialogOkButton));
+			m_resetButton->setIcon(style->standardIcon(QStyle::SP_DialogResetButton));
+			m_eraseNonPresentButton->setIcon(style->standardIcon(QStyle::SP_DialogDiscardButton));
+			m_upEntryButton->setIcon(style->standardIcon(QStyle::SP_ArrowUp));
+			m_downEntryButton->setIcon(style->standardIcon(QStyle::SP_ArrowDown));
 
-			m_horizontalLayout->addWidget(m_clearButton);
+			m_horizontalLayout->addWidget(m_resetButton);
 			m_horizontalLayout->addWidget(m_eraseNonPresentButton);
 			m_horizontalLayout->addWidget(m_toggleSelectedButton);
 			m_horizontalLayout->addWidget(m_upEntryButton);
@@ -129,8 +131,8 @@ namespace QtTools
 		m_searchEdit->setPlaceholderText(tr("column search(Ctrl+F)"));
 
 		//: resets to original order of elements in source model
-		m_clearButton->setShortcut(tr("Ctrl+R"));
-		m_clearButton->setToolTip(tr("Reset to original state(Ctrl+R)"));
+		m_resetButton->setShortcut(tr("Ctrl+R"));
+		m_resetButton->setToolTip(tr("Reset to original state(Ctrl+R)"));
 		
 		m_eraseNonPresentButton->setShortcut(tr("Ctrl+Delete"));
 		m_eraseNonPresentButton->setToolTip(tr("Delete not present elements(Ctrl+Delete)"));

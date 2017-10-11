@@ -46,6 +46,7 @@ namespace QtTools
 	void QtRegisterStdString()
 	{
 		qRegisterMetaType<std::string>();
+		QMetaType::registerComparators<std::string>();
 	}
 
 	void ToQString(const char * str, std::size_t len, QString & res)

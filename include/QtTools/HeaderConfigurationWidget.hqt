@@ -12,15 +12,15 @@
 
 namespace QtTools
 {
-	/// Виджет конфигурации списка столбцов
-	/// Имеет стиль Qt::Tool | Qt::Dialog
+	/// Р’РёРґР¶РµС‚ РєРѕРЅС„РёРіСѓСЂР°С†РёРё СЃРїРёСЃРєР° СЃС‚РѕР»Р±С†РѕРІ
+	/// РРјРµРµС‚ СЃС‚РёР»СЊ Qt::Tool | Qt::Dialog
 	/// 
-	/// на вход получает модель, отображает ее с помощью QListView с checkbox'ами и включенным внутренним dragndrop'ом, 
-	/// имеет панель с кнопками:
+	/// РЅР° РІС…РѕРґ РїРѕР»СѓС‡Р°РµС‚ РјРѕРґРµР»СЊ, РѕС‚РѕР±СЂР°Р¶Р°РµС‚ РµРµ СЃ РїРѕРјРѕС‰СЊСЋ QListView СЃ checkbox'Р°РјРё Рё РІРєР»СЋС‡РµРЅРЅС‹Рј РІРЅСѓС‚СЂРµРЅРЅРёРј dragndrop'РѕРј, 
+	/// РёРјРµРµС‚ РїР°РЅРµР»СЊ СЃ РєРЅРѕРїРєР°РјРё:
 	///  * restore original order
 	///  * erase non present 
 	///  * toggle selected
-	/// порядок столбцов можно настраивать dragndrop'ом
+	/// РїРѕСЂСЏРґРѕРє СЃС‚РѕР»Р±С†РѕРІ РјРѕР¶РЅРѕ РЅР°СЃС‚СЂР°РёРІР°С‚СЊ dragndrop'РѕРј
 	class HeaderConfigurationWidget : public QDialog
 	{
 		Q_OBJECT;
@@ -31,7 +31,7 @@ namespace QtTools
 		QSpacerItem * m_horizontalSpacer;
 		
 		QLineEdit   * m_searchEdit;
-		QToolButton * m_clearButton;
+		QToolButton * m_resetButton;
 		QToolButton * m_eraseNonPresentButton;
 		QToolButton * m_toggleSelectedButton;
 
