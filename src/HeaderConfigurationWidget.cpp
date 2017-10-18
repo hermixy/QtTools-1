@@ -56,13 +56,13 @@ namespace QtTools
 		//: filter shortcut in generic BasicTableWidget, probably should not be translated
 		auto * searchShortcut = new QShortcut(QKeySequence(tr("Ctrl+F")), this);
 		connect(searchShortcut, &QShortcut::activated,
-		        m_searchEdit, static_cast<void (QLineEdit::*)()>(&QLineEdit::setFocus));		
+		        m_searchEdit, static_cast<void (QLineEdit::*)()>(&QLineEdit::setFocus));
 		connect(m_searchEdit, &QLineEdit::textChanged, this, &HeaderConfigurationWidget::OnFilterChanged);
 		
 		connect(m_resetButton, &QToolButton::clicked, m_model, &HeaderControlModel::Reset);
 		connect(m_eraseNonPresentButton, &QToolButton::clicked, m_model, &HeaderControlModel::EraseNonPresent);
 
-		connect(m_toggleSelectedButton, &QToolButton::clicked, this, &HeaderConfigurationWidget::OnToggleSelected);		
+		connect(m_toggleSelectedButton, &QToolButton::clicked, this, &HeaderConfigurationWidget::OnToggleSelected);
 		connect(m_upEntryButton, &QToolButton::clicked, this, &HeaderConfigurationWidget::OnUpItem);
 		connect(m_downEntryButton, &QToolButton::clicked, this, &HeaderConfigurationWidget::OnDownItem);
 	}

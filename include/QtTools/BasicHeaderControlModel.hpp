@@ -37,12 +37,12 @@ namespace QtTools
 	/// 
 	/// @Param SectionInfoTraits класс описывающий информацию о секциях.
 	///        должен содержать типы:
-	///          * section_type - тип информации о секции. 
+	///          * section_type - тип информации о секции.
 	///            Это должен быть класс/структура содержащий как минимум:
 	///              QString code;
 	///              int width;
 	///              bool hidden;
-	///            структура может содержать дополнительные поля по желанию, 
+	///            структура может содержать дополнительные поля по желанию,
 	///            расширьте класс - для предоставления доступа к расширенной информации;
 	///            класс должен быть как минимум default constructible, move constructible, move assignable, swappable
 	///        должен предоставлять методы к полям section_info:
@@ -52,7 +52,7 @@ namespace QtTools
 	///           void set_width(section_info & s, int width)
 	///           bool get_hidden(const section_info & s)
 	///           void set_hidden(section_info & s, bool visible)
-	///             
+	///           
 	///        Смотри пример в QtTools/HeaderSectionInfo.h
 	///
 	/// @Param BaseModel QAbstrctItemModel которую наследует данный класс, по-умолчанию QAbstractListModel
@@ -80,7 +80,7 @@ namespace QtTools
 			static const int notpresent = -1;
 
 		public:
-			section_info(section_type && s, int logicalIndex = notpresent) 
+			section_info(section_type && s, int logicalIndex = notpresent)
 				: info(std::move(s)), logicalIndex(logicalIndex) {}
 
 			section_info(const code_type & code, int logicalIndex = notpresent)
@@ -201,7 +201,7 @@ namespace QtTools
 
 		/// перемещает колонку в отслеживаемой модели с oldVisualIndex перед newVisibleIndex
 		/// newVisualIndex фактически становиться новым индексом
-		/// NOTE: QHeaderView::moveSection интерпретирует аргументы немного по-другому. 
+		/// NOTE: QHeaderView::moveSection интерпретирует аргументы немного по-другому.
 		///       Данный метод производит коррекцию newVisualIndex перед вызовом moveSection.
 		void SyncSectionPos(int oldVisualIndex, int newVisualIndex);
 
@@ -261,7 +261,7 @@ namespace QtTools
 
 		void OnColumnsInserted(const QModelIndex & parent, int start, int end);
 		void OnColumnsRemoved(const QModelIndex & parent, int start, int end);
-		//void OnColumnsMoved(const QModelIndex & sourceParent, int sourceStart, int sourceEnd, 
+		//void OnColumnsMoved(const QModelIndex & sourceParent, int sourceStart, int sourceEnd,
 		//                    const QModelIndex & destinationParent, int destinationColumn);
 		void OnHeaderDataChanged(Qt::Orientation orientation, int first, int last);
 
@@ -322,7 +322,7 @@ namespace QtTools
 		BasicHeaderControlModel(QObject * parent = nullptr)
 			: base_type(parent), m_delayedHelper(this) { }
 
-		BasicHeaderControlModel(int codeRole, QObject * parent = nullptr) 
+		BasicHeaderControlModel(int codeRole, QObject * parent = nullptr)
 			: base_type(parent), m_codeRole(codeRole), m_delayedHelper(this) { }
 	};
 
@@ -546,11 +546,11 @@ namespace QtTools
 		std::size_t row = idx.row();
 		const auto & s = m_sectionContainer.at(row);
 
-		switch (role) 
+		switch (role)
 		{
 			case Qt::ToolTipRole:
 			case Qt::DisplayRole:
-				return IsPresent(s) ? 
+				return IsPresent(s) ?
 			           QVariant::fromValue(DisplayTextByIdx(s.logicalIndex)) :
 			           QVariant::fromValue(get_code(s));
 		
@@ -630,8 +630,8 @@ namespace QtTools
 	                                                                            int row, int column, const QModelIndex & parent) const
 	{
 		const CodeListMime * cmime;
-		return action == Qt::MoveAction && 
-			(cmime = qobject_cast<const CodeListMime *>(data)) && 
+		return action == Qt::MoveAction &&
+			(cmime = qobject_cast<const CodeListMime *>(data)) &&
 			cmime->model == this; // allow only internal move
 	}
 
@@ -720,7 +720,7 @@ namespace QtTools
 	template <class SectionInfoTraits, class BaseModel>
 	void BasicHeaderControlModel<SectionInfoTraits, BaseModel>::OnColumnsInserted(const QModelIndex & parent, int start, int end)
 	{
-		/// что бы корректно обработать данный сигнал нужно, в дополнение к random_access visual index, иметь random_access logical index, 
+		/// что бы корректно обработать данный сигнал нужно, в дополнение к random_access visual index, иметь random_access logical index,
 		/// но мы этого не делаем - поэтому будем делать пересинхронизацию
 		SynchronizeInternalsWithHeader();
 	}
@@ -728,7 +728,7 @@ namespace QtTools
 	template <class SectionInfoTraits, class BaseModel>
 	void BasicHeaderControlModel<SectionInfoTraits, BaseModel>::OnColumnsRemoved(const QModelIndex & parent, int start, int end)
 	{
-		/// что бы корректно обработать данный сигнал нужно, в дополнение к random_access visual index, иметь random_access logical index, 
+		/// что бы корректно обработать данный сигнал нужно, в дополнение к random_access visual index, иметь random_access logical index,
 		/// но мы этого не делаем - поэтому будем делать пересинхронизацию
 		SynchronizeInternalsWithHeader();
 	}

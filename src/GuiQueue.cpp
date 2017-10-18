@@ -27,7 +27,7 @@ namespace QtTools
 	}
 
 	void GuiQueue::Add(action_type action)
-	{	
+	{
 		action_list actions;
 		actions.push_back(action);
 		AddAll(std::move(actions));

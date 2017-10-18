@@ -7,10 +7,11 @@ namespace Delegates
 {
 	namespace TextLayout
 	{
-		QList<QTextLayout::FormatRange> ElideFormats(const QList<QTextLayout::FormatRange> & formats, int elidePoint)
+		QVector<QTextLayout::FormatRange> ElideFormats(const QVector<QTextLayout::FormatRange> & formats, int elidePoint)
 		{
-			QList<QTextLayout::FormatRange> slicedFormats;
-			for (auto & format : formats) {
+			QVector<QTextLayout::FormatRange> slicedFormats;
+			for (auto & format : formats)
+			{
 				if (format.start + format.length > elidePoint)
 				{
 					auto fmt = format;
@@ -40,31 +41,31 @@ namespace Delegates
 			int elideIndex = 0;
 
 			layout.beginLayout();
-			for (;;) {
+			for (;;)
+			{
 				auto line = layout.createLine();
-				if (!line.isValid()) {
+				if (!line.isValid())
 					break;
-				}
 				
 				line.setLineWidth(width);
 				line.setPosition({0, cury});
 				cury += line.height();
 
 				// последняя строка вылезла за границу по высоте
-				if (cury > height) {
+				if (cury > height)
+				{
 					elideIndex = qMax(0, elideIndex - 1);
 					break;
 				}
 
 				// очень длинное слово, не вмещается на линию
-				if (line.naturalTextWidth() > width) {
+				if (line.naturalTextWidth() > width)
 					break;
-				}
 
 				++elideIndex;
 			};
-			layout.endLayout();
 
+			layout.endLayout();
 			return elideIndex;
 		}
 
@@ -125,20 +126,48 @@ namespace Delegates
 		}
 	} // namespace TextLayout
 
-	static void DoDrawText(QPainter * painter, QRect textRect, const QStyleOptionViewItem & opt,
-	                       const QList<QTextLayout::FormatRange> & additionalFormats)
+	void PreparePainter(QPainter * painter, const QStyleOptionViewItem & opt)
+	{
+		// code taken from: qcommonstyle.cpp:2187 qt 5.3
+		// and reworked
+		auto & palette = opt.palette;
+
+		QPalette::ColorGroup cg =
+		    not opt.state & QStyle::State_Enabled ? QPalette::Disabled :
+		         opt.state & QStyle::State_Active ? QPalette::Inactive
+		                                          : QPalette::Normal;
+
+		painter->setFont(opt.font);
+		painter->setPen(palette.color(cg, opt.state & QStyle::State_Selected ? QPalette::HighlightedText : QPalette::Text));
+		painter->setBackground(palette.color(cg, opt.state & QStyle::State_Selected ? QPalette::Highlight : QPalette::Window));
+	}
+
+	void DrawEditingFrame(QPainter * painter, const QRect & textRect, const QStyleOptionViewItem & opt)
+	{
+		if (opt.state & QStyle::State_Editing)
+		{
+			QPalette::ColorGroup cg =
+			    not opt.state & QStyle::State_Enabled ? QPalette::Disabled :
+			         opt.state & QStyle::State_Active ? QPalette::Inactive
+			                                          : QPalette::Normal;
+
+			painter->setPen(opt.palette.color(cg, QPalette::Text));
+			painter->drawRect(textRect.adjusted(0, 0, -1, -1));
+		}
+
+	}
+
+	void DrawFormattedText(QPainter * painter, const QString & text, const QRect & textRect, const QStyleOptionViewItem & opt,
+	                       const QVector<QTextLayout::FormatRange> & additionalFormats)
 	{
 		using namespace TextLayout;
 		// could be interesting: qcommonstyle.cpp:861  qt 5.3 (viewItemDrawText)
 		auto * style = AccquireStyle(opt);
-		auto & text = opt.text;
-
-		RemoveTextMargin(style, textRect);
 		auto textOption = PrepareTextOption(opt);
 
 		QTextLayout textLayout(text, opt.font, painter->device());
 		textLayout.setTextOption(textOption);
-		textLayout.setAdditionalFormats(additionalFormats);
+		textLayout.setFormats(additionalFormats);
 		textLayout.setCacheEnabled(true);
 
 		int elideIdx = DoLayout(textLayout, textRect);
@@ -162,38 +191,11 @@ namespace Delegates
 
 			QTextLayout elideLayout(elidedText, opt.font, painter->device());
 			elideLayout.setTextOption(textOption);
-			elideLayout.setAdditionalFormats(ElideFormats(additionalFormats, elidePoint));
+			elideLayout.setFormats(ElideFormats(additionalFormats, elidePoint));
 			elideLayout.setCacheEnabled(true);
 			DoLayout(elideLayout, drawRect);
 			// обманываем, нам нужно что бы он нарисовал одну единственную линию
 			DrawLayout(painter, drawRect, elideLayout, 1);
 		}
-	}
-
-	void PreparePainter(QPainter * painter, const QRect & textRect, const QStyleOptionViewItem & opt)
-	{
-		// code taken from: qcommonstyle.cpp:2187 qt 5.3 
-		// and reworked
-		auto & palette = opt.palette;
-
-		QPalette::ColorGroup cg = opt.state & QStyle::State_Enabled ? QPalette::Normal : QPalette::Disabled;
-		if (cg == QPalette::Normal && !(opt.state & QStyle::State_Active))
-			cg = QPalette::Inactive;
-
-		painter->setFont(opt.font);
-		painter->setPen(palette.color(cg, opt.state & QStyle::State_Selected ? QPalette::HighlightedText : QPalette::Text));
-		//painter->setBackground(palette.color(cg, opt.state & QStyle::State_Selected ? QPalette::Highlight : QPalette::Window));
-
-		if (opt.state & QStyle::State_Editing) {
-			painter->setPen(palette.color(cg, QPalette::Text));
-			painter->drawRect(textRect.adjusted(0, 0, -1, -1));
-		}
-	}
-
-	void DrawFormattedText(QPainter * painter, const QRect & textRect, const QStyleOptionViewItem & opt,
-	                       const QList<QTextLayout::FormatRange> & additionalFormats /* = */ )
-	{
-		PreparePainter(painter, textRect, opt);
-		DoDrawText(painter, textRect, opt, additionalFormats);
 	}
 }}

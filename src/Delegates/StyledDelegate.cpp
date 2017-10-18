@@ -28,7 +28,14 @@ namespace Delegates
 
 	void StyledDelegate::DrawText(QPainter * painter, QStyleOptionViewItem & option) const
 	{
-		Delegates::DrawFormattedText(painter, Delegates::TextSubrect(option), option);
+		using namespace Delegates;
+		
+		auto rect = TextSubrect(option);
+		RemoveTextMargin(option, rect);
+
+		PreparePainter(painter, option);
+		DrawEditingFrame(painter, rect, option);
+		DrawFormattedText(painter, option.text, rect, option);
 	}
 
 	void StyledDelegate::DrawFocusFrame(QPainter * painter, QStyleOptionViewItem & option) const
@@ -36,7 +43,7 @@ namespace Delegates
 		Delegates::DrawFocusFrame(painter, Delegates::FocusFrameSubrect(option), option);
 	}
 
-	void StyledDelegate::paint(QPainter * painter, const QStyleOptionViewItem & option, const QModelIndex & index) const 
+	void StyledDelegate::paint(QPainter * painter, const QStyleOptionViewItem & option, const QModelIndex & index) const
 	{
 		auto opt = option;
 		InitStyle(opt, index);

@@ -14,4 +14,4 @@ namespace QtTools
 	inline void DrawText(QPainter & painter, int x, int y, int flags, const QString & text, QRect * boundingRect = nullptr)
 	{ DrawText(painter, QPointF(x, y), flags, text, boundingRect); }
 }
- 
+

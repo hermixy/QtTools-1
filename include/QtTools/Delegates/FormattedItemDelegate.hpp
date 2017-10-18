@@ -14,16 +14,16 @@ namespace Delegates
 	{
 	public:
 		/// тип функции устанавливаемой пользователем
-		/// принимает QStyleOptionViewItem инициализированную с помощью initStyleOption, и индекс 
+		/// принимает QStyleOptionViewItem инициализированную с помощью initStyleOption, и индекс
 		typedef std::function<
-			QList<QTextLayout::FormatRange>(const QStyleOptionViewItem & initedOption, const QModelIndex & idx)
+			QVector<QTextLayout::FormatRange>(const QStyleOptionViewItem & initedOption, const QModelIndex & idx)
 		> FormatterFunctor;
 
 	private:
 		FormatterFunctor m_formatter;
 
 	private:
-		QList<QTextLayout::FormatRange> Format(const QStyleOptionViewItem & initedOption, const QModelIndex & idx) const;
+		QVector<QTextLayout::FormatRange> Format(const QStyleOptionViewItem & initedOption, const QModelIndex & idx) const;
 		void DrawText(QPainter * painter, QStyleOptionViewItem & opt) const override;
 
 	public:

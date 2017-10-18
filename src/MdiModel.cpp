@@ -109,7 +109,7 @@ namespace QtTools
 		return subwindow;
 	}
 
-	QMdiSubWindow * MdiModel::GetSubWindow(int idx) const 
+	QMdiSubWindow * MdiModel::GetSubWindow(int idx) const
 	{
 		return m_subwindows[idx];
 	}
@@ -129,7 +129,7 @@ namespace QtTools
 		m_menu = menu;
 		if (m_menu)
 		{
-			if (m_addSeparator) 
+			if (m_addSeparator)
 				m_separator = m_menu->addSeparator();
 
 			for (auto * subwindow : m_subwindows)

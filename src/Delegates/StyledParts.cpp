@@ -58,7 +58,7 @@ namespace Delegates
 			// We hide the  focusrect in singleselection as it is not required
 			bool nofocus = view->selectionMode() == QAbstractItemView::SingleSelection
 				&& !(opt.state & QStyle::State_KeyboardFocusChange);
-			if (nofocus) 
+			if (nofocus)
 				opt.state &= ~QStyle::State_HasFocus;
 		}
 

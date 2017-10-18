@@ -6,18 +6,19 @@
 namespace QtTools {
 namespace Delegates
 {
-	/// рисует текст opt.text, в textRect painter'а с помощью QTextLayout, учитывая opt.
-	/// некоторые части визуально выделены для отображения найденных частей(задается selectionFormats).
-	/// при обрезании текста, если за обрезанием остается форматирование - оно переносится на "..."
-	void DrawSearchFormatedText(QPainter * painter, QRect textRect, const QStyleOptionViewItem & opt,
-	                            const QList<QTextLayout::FormatRange> & selectionFormats);
+	/// Рисует текст text в textRect painter'а с помощью QTextLayout, учитывая параметры из opt.
+	/// Данный метод его не вызывает PreparePainter, RemoveTextMargin.
+	/// Некоторые части визуально выделены для отображения найденных частей(задается selectionFormats).
+	/// При обрезании текста, если за обрезанием остается форматирование - оно переносится на "..."
+	void DrawSearchFormatedText(QPainter * painter, const QString & text, const QRect & textRect, const QStyleOptionViewItem & opt,
+	                            const QVector<QTextLayout::FormatRange> & selectionFormats);
 
-	/// "раскрашивает" text в соответствии с filterWord
+	/// "Раскрашивает" text в соответствии с filterWord
 	/// слово ищется в text, совпадения раскрашивается в заданный формат
-	void FormatSearchText(const QString & text, const QString & filterWord, 
-	                      const QTextCharFormat & format, QList<QTextLayout::FormatRange> & formats);
+	void FormatSearchText(const QString & text, const QString & filterWord,
+	                      const QTextCharFormat & format, QVector<QTextLayout::FormatRange> & formats);
 	
-	/// делегат, отображающий текст подобно QStyledItemDelegate.
+	/// Делегат, отображающий текст подобно QStyledItemDelegate.
 	/// дополнительно ищет заданный текст в отображаемой строке, и подсвечивает найденные участки
 	class SearchDelegate : public StyledDelegate
 	{
@@ -28,7 +29,7 @@ namespace Delegates
 	protected:
 		/// форматирует текст text в соответствии с m_searchText в formats
 		/// реализация по-умолчанию вызывает FormatSearchText
-		virtual void FormatText(const QString & text, QList<QTextLayout::FormatRange> & formats) const;
+		virtual void FormatText(const QString & text, QVector<QTextLayout::FormatRange> & formats) const;
 		void DrawText(QPainter * painter, QStyleOptionViewItem & opt) const override;
 
 	public:

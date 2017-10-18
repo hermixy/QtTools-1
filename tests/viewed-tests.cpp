@@ -63,7 +63,7 @@ template <class container_type, class view_type>
 static void test_aue()
 {
 	container_type cont;
-	view_type view = &cont;	
+	view_type view = &cont;
 	view.init();
 
 	std::vector<int> assign_batch1 = {10, 15, 1, 25, 100};

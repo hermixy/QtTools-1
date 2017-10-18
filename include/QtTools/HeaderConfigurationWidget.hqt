@@ -15,10 +15,10 @@ namespace QtTools
 	/// Виджет конфигурации списка столбцов
 	/// Имеет стиль Qt::Tool | Qt::Dialog
 	/// 
-	/// на вход получает модель, отображает ее с помощью QListView с checkbox'ами и включенным внутренним dragndrop'ом, 
+	/// на вход получает модель, отображает ее с помощью QListView с checkbox'ами и включенным внутренним dragndrop'ом,
 	/// имеет панель с кнопками:
 	///  * restore original order
-	///  * erase non present 
+	///  * erase non present
 	///  * toggle selected
 	/// порядок столбцов можно настраивать dragndrop'ом
 	class HeaderConfigurationWidget : public QDialog

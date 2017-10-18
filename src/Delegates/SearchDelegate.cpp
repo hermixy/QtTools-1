@@ -5,12 +5,13 @@
 namespace QtTools {
 namespace Delegates
 {
-	void FormatSearchText(const QString & text, const QString & filterWord, const QTextCharFormat & format, QList<QTextLayout::FormatRange> & formats)
+	void FormatSearchText(const QString & text, const QString & filterWord, const QTextCharFormat & format, QVector<QTextLayout::FormatRange> & formats)
 	{
 		if (filterWord.isEmpty()) return;
 
 		int index = text.indexOf(filterWord, 0, Qt::CaseInsensitive);
-		while (index >= 0) {
+		while (index >= 0)
+		{
 			int length = filterWord.length();
 			QTextLayout::FormatRange fmt;
 			fmt.start = index;
@@ -22,7 +23,7 @@ namespace Delegates
 		}
 	}
 
-	static void ColorifyElidePoint(QString & elidedText, QList<QTextLayout::FormatRange> & formats)
+	static void ColorifyElidePoint(QString & elidedText, QVector<QTextLayout::FormatRange> & formats)
 	{
 		const auto elideSymbol = QChar(0x2026);
 		auto pos = elidedText.lastIndexOf(elideSymbol);
@@ -45,23 +46,19 @@ namespace Delegates
 		formats.erase(end, formats.end());
 	}
 
-	void DrawSearchFormatedText(QPainter * painter, QRect textRect, const QStyleOptionViewItem & opt,
-	                            const QList<QTextLayout::FormatRange> & selectionFormats)
+	void DrawSearchFormatedText(QPainter * painter, const QString & text, const QRect & textRect, const QStyleOptionViewItem & opt,
+	                            const QVector<QTextLayout::FormatRange> & selectionFormats)
 	{
 		using namespace QtTools::Delegates;
 		using namespace QtTools::Delegates::TextLayout;
-		PreparePainter(painter, textRect, opt);
 
 		// could be interesting: qcommonstyle.cpp:861  qt 5.3 (viewItemDrawText)
 		auto * style = AccquireStyle(opt);
-		auto & text = opt.text;
-
-		RemoveTextMargin(style, textRect);
 		auto textOption = PrepareTextOption(opt);
 
 		QTextLayout textLayout(text, opt.font);
 		textLayout.setTextOption(textOption);
-		textLayout.setAdditionalFormats(selectionFormats);
+		textLayout.setFormats(selectionFormats);
 		textLayout.setCacheEnabled(true);
 
 		int elideIdx = DoLayout(textLayout, textRect);
@@ -88,7 +85,7 @@ namespace Delegates
 
 			QTextLayout elideLayout {elidedText, opt.font};
 			elideLayout.setTextOption(textOption);
-			elideLayout.setAdditionalFormats(elidedFormats);
+			elideLayout.setFormats(selectionFormats);
 			elideLayout.setCacheEnabled(true);
 
 			DoLayout(elideLayout, drawRect);
@@ -97,16 +94,22 @@ namespace Delegates
 		}
 	}
 
-	void SearchDelegate::FormatText(const QString & text, QList<QTextLayout::FormatRange> & formats) const
+	void SearchDelegate::FormatText(const QString & text, QVector<QTextLayout::FormatRange> & formats) const
 	{
 		FormatSearchText(text, m_searchText, m_format, formats);
 	}
 
 	void SearchDelegate::DrawText(QPainter * painter, QStyleOptionViewItem & opt) const
 	{
-		QList<QTextLayout::FormatRange> formats;
+		QVector<QTextLayout::FormatRange> formats;
 		FormatText(opt.text, formats);
-		DrawSearchFormatedText(painter, TextSubrect(opt), opt, formats);
+
+		auto rect = TextSubrect(opt);
+		RemoveTextMargin(opt, rect);
+
+		PreparePainter(painter, opt);
+		DrawEditingFrame(painter, rect, opt);
+		DrawSearchFormatedText(painter, opt.text, rect, opt, formats);
 	}
 }}
 

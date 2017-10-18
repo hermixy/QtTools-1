@@ -152,7 +152,7 @@ namespace QtTools
 		height += frameWidth + hhdrHeight;
 
 		return {
-			qBound(minWidth, width, maxWidth), 
+			qBound(minWidth, width, maxWidth),
 			qBound(minHeight, height, maxHeight)
 		};
 

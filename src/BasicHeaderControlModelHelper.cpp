@@ -1,6 +1,6 @@
 #include <QtTools/BasicHeaderControlModelHelper.hqt>
 
-const QString BasicHeaderControlModelHelper::CodeListMime::MimeCodeFormat = 
+const QString BasicHeaderControlModelHelper::CodeListMime::MimeCodeFormat =
 	QStringLiteral("application/x-BasicHeaderControlModel-ColumnCodes");
 
 const QStringList BasicHeaderControlModelHelper::CodeListMime::MimeFormats =

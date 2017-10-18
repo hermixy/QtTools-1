@@ -22,13 +22,13 @@ class BasicHeaderControlModelHelper::CodeListMime : public QMimeData
 
 public:
 	// "application/x-BasicHeaderControlModel-ColumnCodes"
-	static const QString MimeCodeFormat; 
+	static const QString MimeCodeFormat;
 	static const QStringList MimeFormats;
 	
 	// codes transfered via this drag&drop operation, void * to simplify adn not depend on template type
 	QVector<const void *> sections;
 
-	// pointer to a model, which started this operation. 
+	// pointer to a model, which started this operation.
 	// To ensure internal only move
 	const void * model = nullptr;
 

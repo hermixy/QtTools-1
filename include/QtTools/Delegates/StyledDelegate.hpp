@@ -5,21 +5,21 @@
 #include <QtWidgets/QStyledItemDelegate>
 
 namespace QtTools {
-namespace Delegates 
+namespace Delegates
 {
 	/// Delegate который ведет себя подобно QStyledItemDelegate,
-	/// но предоставляет перегружаемые функции рисования частей себя, подобно QItemDelegate, 
+	/// но предоставляет перегружаемые функции рисования частей себя, подобно QItemDelegate,
 	/// при этом рисование происходит с учетом стиля.
 	/// по факту вся работа делает в свободных функциях из
-	///   QtTools/Delegates/StyledParts.h 
-	///   QtTools/Delegates/DrawFormattedText.h 
+	///   QtTools/Delegates/StyledParts.h
+	///   QtTools/Delegates/DrawFormattedText.h
 	class StyledDelegate : public QStyledItemDelegate
 	{
 	protected:
 		/// иницилизирует option из index, дефолтная реализация вызывает initFromOption
 		virtual void InitStyle(QStyleOptionViewItem & option, const QModelIndex & index) const;
 
-		/// функции принимает painter и option, если наследнику нужна доп информация - 
+		/// функции принимает painter и option, если наследнику нужна доп информация -
 		/// то или писать свои функции, или выставлять некий временный член, или расширить option
 		/// option создается в методе paint и существует пока отрабатывает paint,
 		/// может быть модифицирован по желанию
@@ -43,7 +43,7 @@ namespace Delegates
 	public:
 		/// реализация метода paint.
 		/// 
-		/// метод вызывает InitStyle, 
+		/// метод вызывает InitStyle,
 		/// после чего делает Delegates::FixStyleOptionViewItem(opt)
 		/// 
 		/// painter->save();

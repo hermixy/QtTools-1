@@ -52,7 +52,7 @@ namespace QtTools
 	inline void ToQDateTime(std::chrono::system_clock::time_point point, QDateTime & dt)
 	{
 		auto msec = std::chrono::duration_cast<std::chrono::milliseconds>(point.time_since_epoch());
-		dt.setMSecsSinceEpoch(msec.count()); 
+		dt.setMSecsSinceEpoch(msec.count());
 	}
 	
 	inline void ToQDateTime(boost::chrono::system_clock::time_point point, QDateTime & dt)
@@ -92,7 +92,7 @@ namespace QtTools
 	/************************************************************************/
 	/*                  chrono / QDate/QDateTime -> julian day              */
 	/************************************************************************/
-	inline double ToJulianDay(std::chrono::system_clock::time_point point) 
+	inline double ToJulianDay(std::chrono::system_clock::time_point point)
 	{
 		auto days = std::chrono::duration_cast<std::chrono::hours>(point.time_since_epoch()).count() / 24;
 		return days + QDATE_JULIAN_DAY_FOR_UNIX_EPOCH;

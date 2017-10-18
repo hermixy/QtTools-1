@@ -1,5 +1,5 @@
 #pragma once
-#include <QtCore/QList>
+#include <QtCore/QVector>
 #include <QtGUi/QTextLayout>
 #include <QtWidgets/QStyleOption>
 #include <QtTools/Delegates/AccqireStyle.hpp>
@@ -15,8 +15,8 @@ namespace Delegates
 		/// нужно делать разметку в 2 этапа:
 		///  * основной текст, который может поместится без усечения
 		///  * оставшийся текст, который нужно усекать
-		/// при этом нужно учитывать длинные слова. 
-		/// Как только мы встречаем длинное слово, целиком не помещающееся по ширине - 
+		/// при этом нужно учитывать длинные слова.
+		/// Как только мы встречаем длинное слово, целиком не помещающееся по ширине -
 		/// это линию обрабатываем как последнюю с усечением
 		/// так же нужно учитывать настройки выравнивания элементов
 
@@ -24,7 +24,7 @@ namespace Delegates
 		/// срезает и возвращает форматы, которые находятся после elidePoint.
 		/// индексы форматов корректируются по elidePoint, он считается новым началом
 		/// полезно при форматировании elided текста
-		QList<QTextLayout::FormatRange> ElideFormats(const QList<QTextLayout::FormatRange> & formats, int elidePoint);
+		QVector<QTextLayout::FormatRange> ElideFormats(const QVector<QTextLayout::FormatRange> & formats, int elidePoint);
 
 		/// выполняет усечение текста. На данный момент усечение выполняется с помощью QFontMetrics::edlidedText,
 		/// как следствие дополнительные форматы не учитываются, в дальнейшем нужно бы написать функцию с учетом
@@ -56,29 +56,12 @@ namespace Delegates
 		///  Смотри также вспомогательные функции ниже
 		int DoLayout(QTextLayout & layout, const QRect & textRect);
 
-		/// вычисляет boundingRectangle в layout после DoLayout(layout, ...), 
+		/// вычисляет boundingRectangle в layout после DoLayout(layout, ...),
 		/// учитывая результат выполнения последнего(смотри описание DoLayout)
 		QRectF BoundingRect(QTextLayout & layout, int elideIndex);
 
 		/// вычисляет прямоугольник для elide линии(смотри описание DoLayout)
 		QRect ElideLineRect(QTextLayout & layout, int elideIndex, const QRect & boundingRectangle);
-
-		/// возвращает horizontal text margin.
-		/// Qt вычисляет область текста с отступами справа и слева
-		/// смотри: qcommonstyle.cpp:861  qt 5.3 (viewItemDrawText)
-		///         viewItemSize.cpp:846  qt 5.3 (viewItemDrawText)
-		inline int TextMargin(QStyle * style)
-		{
-			return style->pixelMetric(QStyle::PM_FocusFrameHMargin) + 1;
-		}
-
-		/// убирает text margin из области полученной с помощью QtTools::Delegates::TextSubrect
-		/// смотри: qcommonstyle.cpp:861  qt 5.3 (viewItemDrawText)
-		inline void RemoveTextMargin(QStyle * style, QRect & textRect)
-		{
-			int padding = TextMargin(style);
-			textRect.adjust(padding, 0, -padding, 0);
-		}
 
 		/// выравнивает прямоугольник к заданным размерам учитывая alignment, direction элемента
 		inline QRect AlignedRect(QStyle * style, const QStyleOptionViewItem & opt, const QSize & size, const QRect & rect)
@@ -91,17 +74,22 @@ namespace Delegates
 		QTextOption PrepareTextOption(const QStyleOptionViewItem & opt);
 
 		/// рисует линии из layout до elideIndex в drawRect(смотри описание DoLayout)
-		/// drawRect должен учитывать alignment, например, с помощью 
+		/// drawRect должен учитывать alignment, например, с помощью
 		void DrawLayout(QPainter * painter, const QRect & drawRect, const QTextLayout & layout, int elideIndex);
 	}
 
 	/// Подготавливает painter для дальнейшего рисования
 	/// выставляет шрифт, перо, фон.
-	void PreparePainter(QPainter * painter, const QRect & textRect, const QStyleOptionViewItem & opt);
+	void PreparePainter(QPainter * painter, const QStyleOptionViewItem & opt);
 
-	/// рисует текст opt.text 
-	/// в textRect painter'а с помощью QTextLayout, учитывая opt.
+	/// Рисует рамку редактируемого тектса(если opt.state содержит QStyle::State_Editing).
+	/// Стандартный ItemView делегат рисует ее на этапе рисования текста.
+	/// textRect следует получать с помощью QtTools::Delegates::TextSubrect(opt), это базовый способ QStyledItemDelegate
+	void DrawEditingFrame(QPainter * painter, const QRect & textRect, const QStyleOptionViewItem & opt);
+
+	/// Рисует текст text в textRect painter'а с помощью QTextLayout, учитывая параметры из opt.
+	/// Данный метод его не вызывает PreparePainter, RemoveTextMargin.
 	/// additionalFormats - дополнительные форматы для opt.text
-	void DrawFormattedText(QPainter * painter, const QRect & textRect, const QStyleOptionViewItem & opt,
-	                       const QList<QTextLayout::FormatRange> & additionalFormats = {});
+	void DrawFormattedText(QPainter * painter, const QString & text, const QRect & textRect, const QStyleOptionViewItem & opt,
+	                       const QVector<QTextLayout::FormatRange> & additionalFormats = {});
 }}

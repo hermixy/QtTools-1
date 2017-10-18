@@ -8,8 +8,8 @@ namespace QtTools
 	/// в рамках одного предка(для древовидных пока нельзя переместить с одной ветки на другую)
 	/// 
 	/// !!!NOTE: данное расширение будет корректно работать только для QStandardItem, но не для классов-наследников
-	///          для QStandardItemModel фактически не возможно корректно реализовать moveRows, 
-	///          в силу того что она не поддерживает swap_rows, 
+	///          для QStandardItemModel фактически не возможно корректно реализовать moveRows,
+	///          в силу того что она не поддерживает swap_rows,
 	///          setItem фактически удаляет предыдущий и корректирует persistence индексы соответствующим образом(прямые удаляет)
 	///          для swap_rows используем обмен через setItemData, это работает, но только для общеизвестных ролей
 	///          
@@ -22,7 +22,7 @@ namespace QtTools
 		StandardItemModel(int rows, int columns, QObject * parent = nullptr) : QStandardItemModel(rows, columns, parent) {}
 
 		bool moveRows(const QModelIndex & sourceParent, int sourceRow, int count,
-					  const QModelIndex & destinationParent, int destinationChild) override;
+		              const QModelIndex & destinationParent, int destinationChild) override;
 
 		void SwapRows(int row1, int row2);
 	};

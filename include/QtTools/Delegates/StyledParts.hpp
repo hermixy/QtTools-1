@@ -12,7 +12,7 @@ namespace Delegates
 	/// QStyle::drawControl(CE_ItemViewItem, ...)
 	/// qwindowsvistastyle.cpp:1443 qt 5.3
 	/// 
-	/// на момент qt 5.3 только QWindowsVistaStyle ведет себя так, 
+	/// на момент qt 5.3 только QWindowsVistaStyle ведет себя так,
 	/// вообще не плохо бы придумать более общее решение, если возможно
 	/// 
 	/// QWindowsVistaStyle делает правки палитры что бы выглядеть корректно для QListView, QTreeView
@@ -70,13 +70,48 @@ namespace Delegates
 	}
 
 	/// получает область рамки фокуса
-	/// @Param opt как есть из метода paint, с обработкой по желанию	
+	/// @Param opt как есть из метода paint, с обработкой по желанию
 	inline QRect FocusFrameSubrect(const QStyleOptionViewItem & opt)
 	{
 		auto * style = AccquireStyle(opt);
 		return style->subElementRect(QStyle::SE_ItemViewItemFocusRect, &opt, opt.widget);
 	}
 
+
+	/// возвращает horizontal text margin.
+	/// Qt вычисляет область текста с отступами справа и слева
+	/// смотри: qcommonstyle.cpp:861  qt 5.3 (viewItemDrawText)
+	///         viewItemSize.cpp:846  qt 5.3 (viewItemDrawText)
+	inline int TextMargin(QStyle * style)
+	{
+		return style->pixelMetric(QStyle::PM_FocusFrameHMargin) + 1;
+	}
+
+	/// возвращает horizontal text margin.
+	/// Qt вычисляет область текста с отступами справа и слева
+	/// смотри: qcommonstyle.cpp:861  qt 5.3 (viewItemDrawText)
+	///         viewItemSize.cpp:846  qt 5.3 (viewItemDrawText)
+	inline int TextMargin(const QStyleOptionViewItem & opt)
+	{
+		auto * style = AccquireStyle(opt);
+		return TextMargin(opt);
+	}
+
+	/// убирает text margin из области полученной с помощью QtTools::Delegates::TextSubrect
+	/// смотри: qcommonstyle.cpp:861  qt 5.3 (viewItemDrawText)
+	inline void RemoveTextMargin(QStyle * style, QRect & textRect)
+	{
+		int padding = TextMargin(style);
+		textRect.adjust(padding, 0, -padding, 0);
+	}
+
+	/// убирает text margin из области полученной с помощью QtTools::Delegates::TextSubrect
+	/// смотри: qcommonstyle.cpp:861  qt 5.3 (viewItemDrawText)
+	inline void RemoveTextMargin(const QStyleOptionViewItem & opt, QRect & textRect)
+	{
+		auto * style = AccquireStyle(opt);
+		return RemoveTextMargin(style, textRect);
+	}
 
 	/************************************************************************/
 	/*            DrawMethods                                               */

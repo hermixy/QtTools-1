@@ -17,8 +17,8 @@ namespace Delegates
 
 	void CheckBoxDelegate::paint(QPainter * painter, const QStyleOptionViewItem & option, const QModelIndex & index) const
 	{
-		// мы пытаемся нарисовать checkbox, 
-		// при этом мы хотим что бы он выглядел как тот, который рисуется QStyledItemDelegate по умолчанию, 
+		// мы пытаемся нарисовать checkbox,
+		// при этом мы хотим что бы он выглядел как тот, который рисуется QStyledItemDelegate по умолчанию,
 		// но с центрированием и полным отбрасыванием текста
 
 		// CE_ItemViewItem рисуется следующим образом(подсмотрено из qcommonstyle.cpp:2147 версии qt 5.3)
@@ -86,7 +86,7 @@ namespace Delegates
 			opt.displayAlignment = Qt::AlignCenter;
 			opt.features |= QStyleOptionViewItem::HasCheckIndicator;
 
-			//  проверяем что пользователь щелкнул именно по чекбоксу, 
+			//  проверяем что пользователь щелкнул именно по чекбоксу,
 			//  тут можно подправить, если хочется что бы реагировало на любые нажатия
 			QRect checkRect = CheckmarkRect(opt);
 			if (!checkRect.contains(me->pos()))
