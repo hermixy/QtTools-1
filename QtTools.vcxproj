@@ -76,7 +76,6 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="include\QtTools\BasicHeaderControlModel.hpp" />
-    <ClInclude Include="include\QtTools\ConnectionController.hpp" />
     <ClInclude Include="include\QtTools\DateUtils.hpp" />
     <ClInclude Include="include\QtTools\Delegates\SearchDelegate.hpp" />
     <ClInclude Include="include\QtTools\Delegates\StyledDelegate.hpp" />
