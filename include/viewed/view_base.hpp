@@ -19,17 +19,17 @@ namespace viewed
 	/// 
 	/// Main container expected to live as long as view does. View holds only non owning pointers to data
 	/// 
-	/// container must meet following conditions: 
+	/// container must meet following conditions:
 	/// * STL compatible interface(types, methods)
 	/// * at least forward iterator category, but pointers/references must be stable, iterators can be unstable
 	/// * have member type:
 	///     signal_range_type - random access range of valid pointers(at least at moment of call) to value_type
 	///                         sorted by pointer value
 	///     scoped_connection - owning signal connection handle, breaks connection in destructor
-	///                        
+	///     
 	/// * on_update member function which connects given functor with signal and returns connection.
 	///             slot signature is: void (signal_range_type sorted_erased, signal_range_type sorted_updated, signal_range_type inserted).
-	///             signal is emitted in process of updating data in container(after update/insert, before erase) with 3 ranges of pointers. 
+	///             signal is emitted in process of updating data in container(after update/insert, before erase) with 3 ranges of pointers.
 	///             1st points to removed elements, 2nd points to elements that were updated, 3nd to newly inserted.
 	///             
 	/// * on_erase member function which connects given functor with signal and returns connection.
@@ -55,8 +55,8 @@ namespace viewed
 	///
 	/// @Param Container class to which this view will connect and listen updates
 	///                  Container must have on_update, on_erase, on_clear signal member functions
-	///                  on_update, on_erase provide signal_range_type range, 
-	///                  random access of pointers to affected elements, 
+	///                  on_update, on_erase provide signal_range_type range,
+	///                  random access of pointers to affected elements,
 	///                  sorted by pointer value
 	template <class Container>
 	class view_base
@@ -132,7 +132,7 @@ namespace viewed
 		/// Provided, when view class used directly without inheritance, to complete initialization.
 		/// Calls connects signals and calls reinit_view.
 		/// 
-		/// Derived views probably will automatically call it constructor 
+		/// Derived views probably will automatically call it constructor
 		/// or directly connect_signals/reinit_view
 		virtual void init();
 
@@ -140,7 +140,7 @@ namespace viewed
 		/// connects container signals to appropriate handlers
 		virtual void connect_signals();
 
-		/// container event handlers, those are called on container signals, 
+		/// container event handlers, those are called on container signals,
 		/// you could reimplement them to provide proper handling of your view
 		
 		/// called when new data is updated in owning container
@@ -149,8 +149,8 @@ namespace viewed
 		/// 
 		/// default implementation removes erased, appends inserted records, and does nothing with sorted_updated
 		virtual void update_data(
-			const signal_range_type & sorted_erased, 
-			const signal_range_type & sorted_updated, 
+			const signal_range_type & sorted_erased,
+			const signal_range_type & sorted_updated,
 			const signal_range_type & inserted);
 
 		/// called when some records are erased from container
@@ -168,7 +168,7 @@ namespace viewed
 		static const_pointer make_pointer(const value_type & val) { return &val; }
 
 		/// removes from m_store records from recs
-		/// complexity N log2 M, 
+		/// complexity N log2 M,
 		/// where N = m_store.size(), M = recs.size()
 		void sorted_erase_records(const signal_range_type & sorted_erased);
 
@@ -209,8 +209,8 @@ namespace viewed
 
 	template <class Container>
 	void view_base<Container>::update_data(
-		const signal_range_type & sorted_erased, 
-		const signal_range_type & sorted_updated, 
+		const signal_range_type & sorted_erased,
+		const signal_range_type & sorted_updated,
 		const signal_range_type & inserted)
 	{
 		auto first = m_store.begin();

@@ -97,8 +97,8 @@ namespace viewed
 		/// adjusts view with erased/updated/inserted data, preserving filter/sort order. stable
 		/// emits appropriate qt signals, uses merge_newdata(iter..., iter..., ...) to calculate index permutations.
 		virtual void update_data(
-			const signal_range_type & sorted_erased, 
-			const signal_range_type & sorted_updated, 
+			const signal_range_type & sorted_erased,
+			const signal_range_type & sorted_updated,
 			const signal_range_type & inserted) override;
 		
 	protected:
@@ -114,7 +114,7 @@ namespace viewed
 		/// first, middle, last - is are one range, as in std::inplace_merge
 		/// if resort_old is true it also resorts [first, middle), otherwise it's assumed it's sorted
 		virtual void merge_newdata(
-			store_iterator first, store_iterator middle, store_iterator last, 
+			store_iterator first, store_iterator middle, store_iterator last,
 			bool resort_old = true);
 
 		/// merges m_store's [middle, last) into [first, last) according to m_sort_pred. stable.
@@ -144,13 +144,13 @@ namespace viewed
 		/// refilters m_store with m_filter_pred according to rtype:
 		/// * same        - does nothing and immediately returns(does not emit any qt signals)
 		/// * incremental - calls refilter_full
-		/// * full        - calls refilter_incremental		
+		/// * full        - calls refilter_incremental
 		virtual void refilter_and_notify(refilter_type rtype);
 		/// removes elements not passing m_filter_pred from m_store
-		/// emits qt layoutAboutToBeChanged(..., VerticalSortHint), layoutUpdated(..., VerticalSortHint)
+		/// emits qt layoutAboutToBeChanged(..., NoLayoutChangeHint), layoutUpdated(..., NoLayoutChangeHint)
 		virtual void refilter_incremental();
 		/// fills m_store from owner with values passing m_filter_pred and sorts them according to m_sort_pred
-		/// emits qt layoutAboutToBeChanged(..., VerticalSortHint), layoutUpdated(..., VerticalSortHint)
+		/// emits qt layoutAboutToBeChanged(..., NoLayoutChangeHint), layoutUpdated(..., NoLayoutChangeHint)
 		virtual void refilter_full();
 
 	public:
@@ -222,10 +222,10 @@ namespace viewed
 		//
 		// * passes -> not passes - items should be erased from m_store
 		// * not passes -> passes - those items should threated like inserted
-		// * passes -> passes 
+		// * passes -> passes
 		//     it's position in m_store may or may not changed, we do not have a way to know it - record must be resorted.
 		//     Also remember we are stable sorted, we can't erase and then re-merge it:
-		//     if it's sort criteria doesn't changed, and there are equal neighbors - 
+		//     if it's sort criteria doesn't changed, and there are equal neighbors -
 		//     it's position will change => we are unstable.
 		//     
 		//     Those records should be left where they where and stable_sort should called on entire m_store.
@@ -246,7 +246,7 @@ namespace viewed
 		// marked items from [middle, last) are removed as they are already present in [first, middle)
 		// complexity is: M
 		// 
-		// left updated and inserted than merged to m_store, also merge operation permutates index_array, 
+		// left updated and inserted than merged to m_store, also merge operation permutates index_array,
 		// which is used to update qt persistent indexes
 
 
@@ -318,7 +318,7 @@ namespace viewed
 			order_changed = changed_first != changed_last;
 			
 			middle = viewed::remove_indexes(first, middle, removed_first, removed_last);
-			last = std::copy_if(first_updated, last_updated, middle, 
+			last = std::copy_if(first_updated, last_updated, middle,
 			                    [fpred](auto ptr) { return not is_marked(ptr) and fpred(ptr); });
 			
 			if (m_filter_pred)
@@ -331,7 +331,7 @@ namespace viewed
 		}
 
 		auto * model = get_model();
-		Q_EMIT model->layoutAboutToBeChanged(model_type::empty_model_list, model->VerticalSortHint);
+		Q_EMIT model->layoutAboutToBeChanged(model_type::empty_model_list, model->NoLayoutChangeHint);
 
 		first = m_store.begin();
 		middle = first + middle_sz;
@@ -348,7 +348,7 @@ namespace viewed
 		ilast = std::transform(removed_first, removed_last, ilast, [](auto val) { return -val; });
 
 		merge_newdata(
-			first, middle, last, 
+			first, middle, last,
 			ifirst, ifirst + middle_sz, ifirst + m_store.size(),
 			order_changed
 		);
@@ -356,7 +356,7 @@ namespace viewed
 		viewed::inverse_index_array(ifirst, ilast, offset);
 		change_indexes(ifirst, ilast, offset);
 
-		Q_EMIT model->layoutChanged(model_type::empty_model_list, model->VerticalSortHint);
+		Q_EMIT model->layoutChanged(model_type::empty_model_list, model->NoLayoutChangeHint);
 	}
 
 	template <class Container, class SortPred, class FilterPred>
@@ -441,7 +441,7 @@ namespace viewed
 	{
 		switch (rtype)
 		{
-			default: 
+			default:
 			case refilter_type::same:        return;
 
 			case refilter_type::incremental: return refilter_incremental();
@@ -466,7 +466,7 @@ namespace viewed
 			*erased_last++ = static_cast<int>(it - first);
 
 		auto * model = get_model();
-		Q_EMIT model->layoutAboutToBeChanged(model_type::empty_model_list, model->VerticalSortHint);
+		Q_EMIT model->layoutAboutToBeChanged(model_type::empty_model_list, model->NoLayoutChangeHint);
 
 		auto index_map = viewed::build_relloc_map(erased_first, erased_last, m_store.size());
 		change_indexes(index_map.begin(), index_map.end(), 0);
@@ -474,7 +474,7 @@ namespace viewed
 		last = viewed::remove_indexes(first, last, erased_first, erased_last);
 		m_store.resize(last - first);
 
-		Q_EMIT model->layoutChanged(model_type::empty_model_list, model->VerticalSortHint);
+		Q_EMIT model->layoutChanged(model_type::empty_model_list, model->NoLayoutChangeHint);
 	}
 
 	template <class Container, class SortPred, class FilterPred>

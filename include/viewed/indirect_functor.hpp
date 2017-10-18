@@ -33,7 +33,7 @@ namespace viewed
 		typedef typename boost::make_variant_over<transformed>::type type;
 	};
 
-	///аналогичен boost::make_indirect_fun, 
+	///аналогичен boost::make_indirect_fun,
 	///но корректно обрабатывает boost::variant
 	template <class Pred>
 	inline

@@ -39,8 +39,8 @@ namespace viewed
 		static main_store_type make_store(Hash hash, Equal eq)
 		{
 			typedef typename main_store_type::ctor_args ctor_args;
-			/// The first element of this tuple indicates the minimum number of buckets 
-			/// set up by the index on construction time. 
+			/// The first element of this tuple indicates the minimum number of buckets
+			/// set up by the index on construction time.
 			/// If the default value 0 is used, an implementation defined number is used instead.
 			return main_store_type(
 				ctor_args(0, boost::multi_index::identity<Type>(), std::move(hash), std::move(eq))

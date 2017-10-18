@@ -27,7 +27,7 @@ namespace viewed
 		typedef boost::signals2::connection          connection;
 		typedef boost::signals2::scoped_connection   scoped_connection;
 
-		/// signal is emitted in process of updating data in container(after update/insert, before erase) with 3 ranges of pointers. 
+		/// signal is emitted in process of updating data in container(after update/insert, before erase) with 3 ranges of pointers.
 		///  * 1st to erased elements, sorted by pointer value
 		///  * 2nd points to elements that were updated, sorted by pointer value
 		///  * 3rd to newly inserted, order is unspecified
@@ -36,10 +36,10 @@ namespace viewed
 			boost::signals2::keywords::mutex_type<signal_mutex_type>
 		>::type update_signal_type;
 
-		/// signal is emitted before data is erased from container, 
+		/// signal is emitted before data is erased from container,
 		/// with range of pointers to elements to erase, sorted by pointer value
 		typedef typename boost::signals2::signal_type<
-			void(signal_range_type erased), 
+			void(signal_range_type erased),
 			boost::signals2::keywords::mutex_type<signal_mutex_type>
 		>::type erase_signal_type;
 

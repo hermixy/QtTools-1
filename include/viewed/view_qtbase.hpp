@@ -10,14 +10,14 @@
 
 namespace viewed
 {
-	/// This class provides base for building views based on viewed containers.	
+	/// This class provides base for building views based on viewed containers.
 	/// It also has knowledge of Qt models and it's signals(beginInsertRows, layoutUpdated, etc),
 	/// see also view_base.
 	/// 
 	/// It knows about qt and emits/calls appropriate methods where needed,
 	/// like layoutUpdated, beginInsertRows, etc
 	///
-	/// Class itself does not inherit QAbstractItemModel, but acquires it via virtual method get_model - 
+	/// Class itself does not inherit QAbstractItemModel, but acquires it via virtual method get_model -
 	/// default implementation uses dynamic_cast.
 	template <class Container>
 	class view_qtbase : public view_base<Container>
@@ -59,7 +59,7 @@ namespace viewed
 		virtual void change_indexes(int_vector::const_iterator first, int_vector::const_iterator last, int offset);
 
 	protected:
-		/// container event handlers, those are called on container signals, 
+		/// container event handlers, those are called on container signals,
 		/// you could reimplement them to provide proper handling of your view
 		
 		/// called when new data is updated in owning container
@@ -70,7 +70,7 @@ namespace viewed
 		/// emits qt beginInsertRows/endInsertRows
 		virtual void update_data(
 			const signal_range_type & sorted_erased,
-			const signal_range_type & sorted_updated, 
+			const signal_range_type & sorted_updated,
 			const signal_range_type & inserted) override;
 
 		/// called when some records are erased from container
@@ -130,7 +130,8 @@ namespace viewed
 		auto * model = get_model();
 		auto size = last - first;
 
-		for (const auto & idx : model->persistentIndexList())
+		auto list = model->persistentIndexList();
+		for (const auto & idx : list)
 		{
 			if (!idx.isValid()) continue;
 
@@ -140,7 +141,8 @@ namespace viewed
 			if (row < offset) continue;
 
 			assert(row < size); (void)size;
-			model->changePersistentIndex(idx, model->index(first[row - offset], col));
+			auto newIdx = model->index(first[row - offset], col);
+			model->changePersistentIndex(idx, newIdx);
 		}
 	}
 
@@ -156,7 +158,7 @@ namespace viewed
 	template <class Container>
 	void view_qtbase<Container>::update_data(
 		const signal_range_type & sorted_erased,
-		const signal_range_type & sorted_updated, 
+		const signal_range_type & sorted_updated,
 		const signal_range_type & inserted)
 	{
 		if (sorted_erased.empty())
@@ -188,7 +190,7 @@ namespace viewed
 				*erased_last++ = static_cast<int>(it - first);
 
 			auto * model = get_model();
-			Q_EMIT model->layoutAboutToBeChanged(model_type::empty_model_list, model->VerticalSortHint);
+			Q_EMIT model->layoutAboutToBeChanged(model_type::empty_model_list, model->NoLayoutChangeHint);
 
 			auto index_map = viewed::build_relloc_map(erased_first, erased_last, m_store.size());
 			change_indexes(index_map.begin(), index_map.end(), 0);
@@ -199,7 +201,7 @@ namespace viewed
 			m_store.resize(old_sz + inserted.size());
 			boost::copy(inserted, m_store.begin() + old_sz);
 
-			Q_EMIT model->layoutChanged(model_type::empty_model_list, model->VerticalSortHint);
+			Q_EMIT model->layoutChanged(model_type::empty_model_list, model->NoLayoutChangeHint);
 		}
 	}
 
@@ -223,7 +225,7 @@ namespace viewed
 			*erased_last++ = static_cast<int>(it - first);
 
 		auto * model = get_model();
-		Q_EMIT model->layoutAboutToBeChanged(model_type::empty_model_list, model->VerticalSortHint);
+		Q_EMIT model->layoutAboutToBeChanged(model_type::empty_model_list, model->NoLayoutChangeHint);
 
 		auto index_map = viewed::build_relloc_map(erased_first, erased_last, m_store.size());
 		change_indexes(index_map.begin(), index_map.end(), 0);
@@ -231,7 +233,7 @@ namespace viewed
 		last = viewed::remove_indexes(first, last, erased_first, erased_last);
 		m_store.resize(last - first);
 		
-		Q_EMIT model->layoutChanged(model_type::empty_model_list, model->VerticalSortHint);
+		Q_EMIT model->layoutChanged(model_type::empty_model_list, model->NoLayoutChangeHint);
 	}
 
 	template <class Container>

@@ -11,8 +11,8 @@ namespace viewed
 	struct container_traits
 	{
 		//////////////////////////////////////////////////////////////////////////
-		///                           types                                         
-		//////////////////////////////////////////////////////////////////////////		
+		///                           types                                       
+		//////////////////////////////////////////////////////////////////////////
 		/// container class that stores value_type,
 		/// main_store_type should provide stable pointers/references,
 		/// iterators allowed to be invalidated on modify operations.
@@ -36,7 +36,7 @@ namespace viewed
 
 		/// update takes current internal_value_type rvalue as first argument and some generic type as second.
 		/// It updates current value with new data
-		/// usually second type is some reference of value_type 
+		/// usually second type is some reference of value_type
 		struct update_type;
 		static const update_type                  update;
 	};
@@ -66,13 +66,13 @@ namespace viewed
 		///  signature: void(signal_range_type sorted_erased, signal_range_type sorted_updated, signal_range_type inserted)
 		typedef implementation-defined update_signal_type;
 
-		/// signal is emitted before data is erased from container, 
+		/// signal is emitted before data is erased from container,
 		/// with range of pointers to elements to erase, sorted by pointer value
-		/// signature: void(signal_range_type erased), 
+		/// signature: void(signal_range_type erased),
 		typedef implementation-defined erase_signal_type;
 
 		/// signal is emitted before container is cleared.
-		/// signature: void(), 
+		/// signature: void(),
 		typedef implementation-defined clear_signal_type;
 	}
 	*/
@@ -233,11 +233,11 @@ namespace viewed
 			std::tie(where, inserted_into_store) = m_store.insert(std::forward<decltype(val)>(val));
 
 			auto * ptr = traits_type::get_pointer(*where);
-			if (inserted_into_store) 
+			if (inserted_into_store)
 			{
 				inserted.push_back(ptr);
 			}
-			else 
+			else
 			{
 				traits_type::update(const_cast<value_type &>(*where), std::forward<decltype(val)>(val));
 				updated.push_back(ptr);

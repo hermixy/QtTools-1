@@ -35,8 +35,8 @@ namespace viewed
 		/// if overloading isn't needed static function members  - will be ok,
 		/// but if you want provide several overloads - use static functors members
 		
-		static main_store_type make_store(Compare comp) 
-		{ 
+		static main_store_type make_store(Compare comp)
+		{
 			typedef typename main_store_type::ctor_args ctor_args;
 			return main_store_type(
 				ctor_args(boost::multi_index::identity<Type>(), std::move(comp))

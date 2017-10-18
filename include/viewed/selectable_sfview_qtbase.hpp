@@ -69,7 +69,7 @@ namespace viewed
 		iterator deselect(iterator it)                  { return set_selected(it, false); }
 		iterator toggle_selected(iterator it)           { return set_selected(it, !is_selected(it)); }
 
-		/// returns a const range of selected elements, 
+		/// returns a const range of selected elements,
 		/// order of elements is undefined
 		const selection_set_type & seleted_elements() const { return m_selection_set; }
 
@@ -110,7 +110,7 @@ namespace viewed
 		/// first, middle, last - is are one range, as in std::inplace_merge
 		/// if resort_old is true it also resorts [first, middle), otherwise it's assumed it's sorted
 		virtual void merge_newdata(
-			store_iterator first, store_iterator middle, store_iterator last, 
+			store_iterator first, store_iterator middle, store_iterator last,
 			bool resort_old = true) override;
 
 		/// merges m_store's [middle, last) into [first, last) according to m_sort_pred. stable.
@@ -123,7 +123,7 @@ namespace viewed
 			int_vector::iterator ifirst, int_vector::iterator imiddle, int_vector::iterator ilast,
 			bool resort_old = true) override;
 
-		/// sorts [first; last) with m_sort_pred, stable sorts		
+		/// sorts [first; last) with m_sort_pred, stable sorts
 		virtual void sort(store_iterator first, store_iterator last) override;
 		/// sorts m_store's [first; last) with m_sort_pred, stable sort
 		/// range [ifirst; ilast) must be permuted the same way as range [first; last)
@@ -213,7 +213,7 @@ namespace viewed
 	{
 		// we clearing all selection, if we are partitioned by selection
 		// cleared elements must be rotated out of partitioned part,
-		// but because we are clearing - that part will become empty, 
+		// but because we are clearing - that part will become empty,
 		// so we can leave it as is
 		
 		auto * model = get_model();
@@ -285,7 +285,7 @@ namespace viewed
 		partition(store_iterator first, store_iterator last)
 	{
 		typedef const value_type * pointer;
-		if (m_partition_by_selection_asc) 
+		if (m_partition_by_selection_asc)
 		{
 			auto pred = [this](pointer ptr) { return m_selection_set.count(ptr) != 0; };
 			std::stable_partition(first, last, pred);
@@ -391,7 +391,7 @@ namespace viewed
 		
 		bool asc = m_partition_by_selection_asc;
 		decltype(begIt) pp;
-		if (asc) 
+		if (asc)
 		{
 			auto pred = [this](const_pointer ptr) { return m_selection_set.count(ptr) != 0; };
 			pp = std::partition_point(begIt, endIt, pred);
