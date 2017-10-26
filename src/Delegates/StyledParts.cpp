@@ -52,8 +52,7 @@ namespace Delegates
 			opt.palette.setColor(QPalette::All, QPalette::HighlightedText,
 			                     opt.palette.color(QPalette::Active, QPalette::Text));
 			// Note that setting a saturated color here results in ugly XOR colors in the focus rect
-			opt.palette.setColor(QPalette::All,
-			                     QPalette::Highlight, opt.palette.base().color().darker(108));
+			opt.palette.setColor(QPalette::All, QPalette::Highlight, opt.palette.base().color().darker(108));
 			
 			// We hide the  focusrect in singleselection as it is not required
 			bool nofocus = view->selectionMode() == QAbstractItemView::SingleSelection
