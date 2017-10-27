@@ -84,7 +84,7 @@
     <ClInclude Include="include\QtTools\HeaderControlModel.hqt" />
     <ClInclude Include="include\QtTools\TableViewUtils.hpp" />
     <ClInclude Include="include\QtTools\ToggleChecked.hpp" />
-    <ClInclude Include="include\QtTools\Delegates\AccqireStyle.hpp" />
+    <ClInclude Include="include\QtTools\Delegates\Utils.hpp" />
     <ClInclude Include="include\QtTools\Delegates\CheckBoxDelegate.hpp" />
     <ClInclude Include="include\QtTools\Delegates\FormattedItemDelegate.hpp" />
     <ClInclude Include="include\QtTools\Delegates\StyledParts.hpp" />

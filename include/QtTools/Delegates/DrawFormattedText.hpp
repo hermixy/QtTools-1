@@ -2,7 +2,7 @@
 #include <QtCore/QVector>
 #include <QtGUi/QTextLayout>
 #include <QtWidgets/QStyleOption>
-#include <QtTools/Delegates/AccqireStyle.hpp>
+#include <QtTools/Delegates/Utils.hpp>
 
 namespace QtTools {
 namespace Delegates

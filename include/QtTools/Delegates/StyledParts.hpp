@@ -3,7 +3,7 @@
 #include <QtWidgets/QStyle>
 #include <QtWidgets/QStyleOption>
 #include <QtWidgets/QStyledItemDelegate>
-#include <QtTools/Delegates/AccqireStyle.hpp>
+#include <QtTools/Delegates/Utils.hpp>
 
 namespace QtTools {
 namespace Delegates

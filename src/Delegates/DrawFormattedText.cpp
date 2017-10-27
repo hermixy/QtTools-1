@@ -131,11 +131,7 @@ namespace Delegates
 		// code taken from: qcommonstyle.cpp:2187 qt 5.3
 		// and reworked
 		auto & palette = opt.palette;
-
-		QPalette::ColorGroup cg =
-		    not (opt.state & QStyle::State_Enabled) ? QPalette::Disabled :
-		    not (opt.state & QStyle::State_Active)  ? QPalette::Inactive
-		                                            : QPalette::Normal;
+		QPalette::ColorGroup cg = ColorGroup(opt);
 
 		painter->setFont(opt.font);
 		painter->setPen(palette.color(cg, opt.state & QStyle::State_Selected ? QPalette::HighlightedText : QPalette::Text));
@@ -146,12 +142,7 @@ namespace Delegates
 	{
 		if (opt.state & QStyle::State_Editing)
 		{
-			QPalette::ColorGroup cg =
-			    not (opt.state & QStyle::State_Enabled) ? QPalette::Disabled :
-			    not (opt.state & QStyle::State_Active)  ? QPalette::Inactive
-			                                            : QPalette::Normal;
-
-			painter->setPen(opt.palette.color(cg, QPalette::Text));
+			painter->setPen(opt.palette.color(ColorGroup(opt), QPalette::Text));
 			painter->drawRect(textRect.adjusted(0, 0, -1, -1));
 		}
 
