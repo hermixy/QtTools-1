@@ -67,6 +67,18 @@ inline uint hash_value(const QTime & val)
 	return qHash(val);
 }
 
+namespace std
+{
+	template <>
+	struct hash<QString>
+	{
+		std::size_t operator()(const QString & str) const noexcept
+		{
+			return qHash(str);
+		}
+	};
+}
+
 namespace QtTools
 {
 	/// регистрирует std::string в Qt meta system
@@ -130,7 +142,7 @@ namespace QtTools
 
 	/// преобразует utf-16 QString в utf-8 char range
 	template <class Range>
-	void FromQString(QString const & qstr, Range & res)
+	void FromQString(const QString & qstr, Range & res)
 	{
 		auto inRng = boost::make_iterator_range_n(qstr.utf16(), qstr.size());
 		ext::codecvt_convert::to_bytes(detail_qtstdstring::u8cvt, inRng, res);
@@ -139,11 +151,6 @@ namespace QtTools
 	/************************************************************************/
 	/*               ToQString/FromQString overloads                        */
 	/************************************************************************/
-
-	/// mismatch overloads, delete them
-	QString ToQString(const QString & str) = delete;
-	void ToQString(const QString & str, QString & res) = delete;
-	void FromQString(QString const & qstr, QString & res) = delete;
 
 	template <class Range>
 	inline void ToQString(const Range & rng, QString & res)
@@ -170,12 +177,30 @@ namespace QtTools
 		return QString::fromUtf8(str);
 	}
 
-	inline std::string FromQString(QString const & qstr)
+	/// noop overloads
+	inline QString ToQString(const QString & str) noexcept { return str; };
+	inline void ToQString(const QString & str, QString & res) noexcept { res = str; }
+
+
+	inline void FromQString(const QString & qstr, QString & res) noexcept
 	{
-		std::string res;
+		res = qstr;
+	}
+
+	template <class ResultRange = std::string>
+	inline ResultRange FromQString(const QString & qstr)
+	{
+		ResultRange res;
 		FromQString(qstr, res);
 		return res;
 	}
+
+	template <>
+	inline QString FromQString(const QString & qstr) noexcept
+	{
+		return qstr;
+	}
+
 } // namespace QtTools
 
 inline std::ostream & operator <<(std::ostream & os, const QString & str)
