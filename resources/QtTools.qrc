@@ -1,0 +1,14 @@
+<RCC>
+  <qresource prefix="/QtTools/icons">
+    <file alias="edit-clear.ico">icons/edit-clear.ico</file>
+    <file alias="edit-reset.ico">icons/edit-reset.ico</file>
+    <file alias="edit-clear.svg">icons/edit-clear.svg</file>
+
+    <file alias="arrow-down.ico">icons/arrow-down.ico</file>
+    <file alias="arrow-up.ico">icons/arrow-up.ico</file>    
+    <file alias="go-up.svg">icons/go-up.svg</file>
+    <file alias="go-down.svg">icons/go-down.svg</file>
+
+    <file alias="checkbox-toggle-selected.ico">icons/checkbox-toggle-selected.ico</file>    
+  </qresource>
+</RCC>

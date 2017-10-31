@@ -156,6 +156,22 @@
     <ClInclude Include="include\viewed\view_base.hpp" />
     <ClInclude Include="include\viewed\view_qtbase.hpp" />
   </ItemGroup>
+  <ItemGroup>
+    <QtRCCCompile Include="resources\QtTools.qrc" />
+  </ItemGroup>
+  <ItemGroup>
+    <Image Include="resources\icons\arrow-down.ico" />
+    <Image Include="resources\icons\arrow-up.ico" />
+    <Image Include="resources\icons\checkbox-toggle-selected.ico" />
+    <Image Include="resources\icons\edit-clear.ico" />
+    <Image Include="resources\icons\edit-reset.ico" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="resources\icons\edit-clear.svg" />
+    <None Include="resources\icons\edit-undo.svg" />
+    <None Include="resources\icons\go-down.svg" />
+    <None Include="resources\icons\go-up.svg" />
+  </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
   </ImportGroup>

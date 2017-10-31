@@ -41,11 +41,6 @@ namespace QtTools
 	HeaderConfigurationWidget::HeaderConfigurationWidget(HeaderControlModel & model, QWidget * parent /*= nullptr*/, Qt::WindowFlags flags /*= 0*/)
 		: QDialog(parent, flags | Qt::Tool), m_model(&model)
 	{
-		Init();
-	}
-
-	void HeaderConfigurationWidget::Init()
-	{
 		setupUi();
 		retranslateUi();
 		connectSignals();
@@ -65,6 +60,22 @@ namespace QtTools
 		connect(m_toggleSelectedButton, &QToolButton::clicked, this, &HeaderConfigurationWidget::OnToggleSelected);
 		connect(m_upEntryButton, &QToolButton::clicked, this, &HeaderConfigurationWidget::OnUpItem);
 		connect(m_downEntryButton, &QToolButton::clicked, this, &HeaderConfigurationWidget::OnDownItem);
+	}
+
+	QIcon HeaderConfigurationWidget::loadIcon(const QString & themeIcon, const QString & fallback)
+	{
+		if (QIcon::hasThemeIcon(themeIcon))
+			return QIcon::fromTheme(themeIcon);
+
+		return QIcon(fallback);
+	}
+
+	QIcon HeaderConfigurationWidget::loadIcon(const QString & themeIcon, QStyle::StandardPixmap fallback)
+	{
+		if (QIcon::hasThemeIcon(themeIcon))
+			return QIcon::fromTheme(themeIcon);
+
+		return style()->standardIcon(fallback);
 	}
 
 	void HeaderConfigurationWidget::setupUi()
@@ -89,15 +100,13 @@ namespace QtTools
 			m_toggleSelectedButton = new QToolButton(this);
 			m_upEntryButton = new QToolButton(this);
 			m_downEntryButton = new QToolButton(this);
-			
-			auto * style = this->style();
 
 			//set icons
-			m_toggleSelectedButton->setIcon(style->standardIcon(QStyle::SP_DialogOkButton));
-			m_resetButton->setIcon(style->standardIcon(QStyle::SP_DialogResetButton));
-			m_eraseNonPresentButton->setIcon(style->standardIcon(QStyle::SP_DialogDiscardButton));
-			m_upEntryButton->setIcon(style->standardIcon(QStyle::SP_ArrowUp));
-			m_downEntryButton->setIcon(style->standardIcon(QStyle::SP_ArrowDown));
+			m_toggleSelectedButton->setIcon(loadIcon("checkbox-toggle-selected", ":/QtTools/icons/checkbox-toggle-selected.ico"));
+			m_resetButton->setIcon(loadIcon("edit-reset", ":/QtTools/icons/edit-reset.ico"));
+			m_eraseNonPresentButton->setIcon(loadIcon("edit-clear", ":/QtTools/icons/edit-clear.ico"));
+			m_upEntryButton->setIcon(loadIcon("go-up", QStyle::SP_ArrowUp));
+			m_downEntryButton->setIcon(loadIcon("go-down", QStyle::SP_ArrowDown));
 
 			m_horizontalLayout->addWidget(m_resetButton);
 			m_horizontalLayout->addWidget(m_eraseNonPresentButton);
