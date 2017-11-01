@@ -41,7 +41,7 @@ namespace QtTools
 		QListView * m_view;
 		HeaderControlModel * m_model;
 
-	protected:		
+	protected:
 		void OnFilterChanged(QString text);
 		void OnToggleSelected();
 		void OnUpItem();

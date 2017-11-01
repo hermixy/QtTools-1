@@ -15,10 +15,19 @@
 /************************************************************************/
 Q_DECLARE_METATYPE(std::string)
 
+static_assert(std::is_same_v<QString::iterator, QChar *>);
+static_assert(std::is_same_v<QString::const_iterator, const QChar *>);
+
 template <>
 inline void ext::assign<QString, const char16_t * >(QString & str, const char16_t * first, const char16_t * last)
 {
 	str.setUnicode(reinterpret_cast<const QChar *>(first), last - first);
+}
+
+template <>
+inline void ext::assign<QString, QChar *>(QString & str, QChar * first, QChar * last)
+{
+	str.setUnicode(first, last - first);
 }
 
 template <>
@@ -31,6 +40,12 @@ template <>
 inline void ext::append<QString, const char16_t *>(QString & str, const char16_t * first, const char16_t * last)
 {
 	str.append(reinterpret_cast<const QChar *>(first), last - first);
+}
+
+template <>
+inline void ext::append<QString, QChar *>(QString & str, QChar * first, QChar * last)
+{
+	str.append(first, last - first);
 }
 
 template <>
