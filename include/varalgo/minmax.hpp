@@ -1,97 +1,41 @@
 #pragma once
-
 #include <algorithm>
-
+#include <varalgo/std_variant_traits.hpp>
 #include <boost/range.hpp>
-#include <boost/variant/variant.hpp>
-#include <boost/variant/static_visitor.hpp>
-#include <boost/variant/apply_visitor.hpp>
 
-namespace varalgo {
-
-	template <class Type>
-	struct min_visitor : boost::static_visitor<const Type &>
+namespace varalgo
+{
+	template <class Type, class Pred>
+	inline const Type & min(const Type & a, const Type & b, Pred && pred)
 	{
-		const Type & a;
-		const Type & b;
-
-		min_visitor(const Type & a, const Type & b)
-			: a(a), b(b) {}
-
-		template <class Pred>
-		inline const Type & operator()(Pred pred) const
+		auto alg = [&a, &b](auto && pred)
 		{
-			return std::min(a, b, pred);
-		}
-	};
+			return std::min(a, b, std::forward<decltype(pred)>(pred));
+		};
 
-	template <class Type>
-	struct max_visitor : boost::static_visitor<const Type &>
-	{
-		const Type & a;
-		const Type & b;
-
-		max_visitor(const Type & a, const Type & b)
-			: a(a), b(b) {}
-
-		template <class Pred>
-		inline const Type & operator()(Pred pred) const
-		{
-			return std::max(a, b, pred);
-		}
-	};
-
-	template <class Type>
-	struct minmax_visitor : boost::static_visitor<std::pair<const Type &, const Type &>>
-	{
-		const Type & a;
-		const Type & b;
-
-		minmax_visitor(const Type & a, const Type & b)
-			: a(a), b(b) {}
-
-		template <class Pred>
-		inline std::pair<const Type &, const Type &> operator()(Pred pred) const
-		{
-			return std::minmax(a, b, pred);
-		}
-	};
-
-	template <class Type, class... VariantTypes>
-	inline const Type & min(const Type & a, const Type & b, const boost::variant<VariantTypes...> & pred)
-	{
-		return boost::apply_visitor(min_visitor<Type> {a, b}, pred);
+		return variant_traits<std::decay_t<Pred>>::visit(std::move(alg), std::forward<Pred>(pred));
 	}
 
 	template <class Type, class Pred>
-	inline const Type & min(const Type & a, const Type & b, Pred pred)
+	inline const Type & max(const Type & a, const Type & b, Pred && pred)
 	{
-		return std::min(a, b, pred);
-	}
+		auto alg = [&a, &b](auto && pred)
+		{
+			return std::max(a, b, std::forward<decltype(pred)>(pred));
+		};
 
-	template <class Type, class... VariantTypes>
-	inline const Type & max(const Type & a, const Type & b, const boost::variant<VariantTypes...> & pred)
-	{
-		return boost::apply_visitor(max_visitor<Type> {a, b}, pred);
-	}
-
-	template <class Type, class Pred>
-	inline const Type & max(const Type & a, const Type & b, Pred pred)
-	{
-		return std::max(a, b, pred);
-	}
-
-	template <class Type, class... VariantTypes>
-	inline std::pair<const Type &, const Type &>
-		minmax(const Type & a, const Type & b, const boost::variant<VariantTypes...> & pred)
-	{
-		return boost::apply_visitor(minmax_visitor<Type> {a, b}, pred);
+		return variant_traits<std::decay_t<Pred>>::visit(std::move(alg), std::forward<Pred>(pred));
 	}
 
 	template <class Type, class Pred>
 	inline std::pair<const Type &, const Type &>
-		minmax(const Type & a, const Type & b, Pred pred)
+		minmax(const Type & a, const Type & b, Pred && pred)
 	{
-		return std::minmax(a, b, pred);
+		auto alg = [&a, &b](auto && pred)
+		{
+			return std::minmax(a, b, std::forward<decltype(pred)>(pred));
+		};
+
+		return variant_traits<std::decay_t<Pred>>::visit(std::move(alg), std::forward<Pred>(pred));
 	}
 }

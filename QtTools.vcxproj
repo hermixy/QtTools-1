@@ -98,6 +98,7 @@
     <ClInclude Include="include\varalgo\any_of.hpp" />
     <ClInclude Include="include\varalgo\binary_find.hpp" />
     <ClInclude Include="include\varalgo\binary_search.hpp" />
+    <ClInclude Include="include\varalgo\boost_variant_traits.hpp" />
     <ClInclude Include="include\varalgo\copy_if.hpp" />
     <ClInclude Include="include\varalgo\count_if.hpp" />
     <ClInclude Include="include\varalgo\equal.hpp" />
@@ -117,7 +118,7 @@
     <ClInclude Include="include\varalgo\minmax_element.hpp" />
     <ClInclude Include="include\varalgo\mismatch.hpp" />
     <ClInclude Include="include\varalgo\modifying_algo.hpp" />
-    <ClInclude Include="include\varalgo\non-modifying_algo.hpp" />
+    <ClInclude Include="include\varalgo\non_modifying_algo.hpp" />
     <ClInclude Include="include\varalgo\none_of.hpp" />
     <ClInclude Include="include\varalgo\nth_element.hpp" />
     <ClInclude Include="include\varalgo\on_sorted_algo.hpp" />
@@ -142,6 +143,7 @@
     <ClInclude Include="include\varalgo\unique.hpp" />
     <ClInclude Include="include\varalgo\unique_copy.hpp" />
     <ClInclude Include="include\varalgo\upper_bound.hpp" />
+    <ClInclude Include="include\varalgo\std_variant_traits.hpp" />
     <ClInclude Include="include\viewed\algorithm.hpp" />
     <ClInclude Include="include\viewed\associative_conatiner_base.hpp" />
     <ClInclude Include="include\viewed\get_functor.hpp" />

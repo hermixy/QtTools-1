@@ -1,77 +1,49 @@
 #pragma once
-
 #include <algorithm>
-
+#include <varalgo/std_variant_traits.hpp>
 #include <boost/range.hpp>
-#include <boost/range/detail/range_return.hpp>
-#include <boost/variant/variant.hpp>
-#include <boost/variant/static_visitor.hpp>
-#include <boost/variant/apply_visitor.hpp>
 
-namespace varalgo{
-
-	template <class ForwardIterator>
-	struct remove_if_visitor :
-		boost::static_visitor<ForwardIterator>
+namespace varalgo
+{
+	template <class ForwardIterator, class Pred>
+	inline ForwardIterator remove_if(ForwardIterator first, ForwardIterator last, Pred && pred)
 	{
-		ForwardIterator first, last;
-
-		remove_if_visitor(ForwardIterator first, ForwardIterator last)
-			: first(first), last(last) {}
-
-		template <class Pred>
-		inline ForwardIterator operator()(Pred pred) const
+		auto alg = [&first, &last](auto && pred)
 		{
-			return std::remove_if(first, last, pred);
-		}
-	};
+			return std::remove_if(first, last, std::forward<decltype(pred)>(pred));
+		};
 
-	template <class ForwardIterator, class... VaraintTypes>
-	inline ForwardIterator
-		remove_if(ForwardIterator first, ForwardIterator last, const boost::variant<VaraintTypes...> & pred)
-	{
-		return boost::apply_visitor(
-			remove_if_visitor<ForwardIterator> {first, last},
-			pred);
+		return variant_traits<std::decay_t<Pred>>::visit(std::move(alg), std::forward<Pred>(pred));
 	}
 	
-	template <class ForwardIterator, class Pred>
-	inline ForwardIterator
-		remove_if(ForwardIterator first, ForwardIterator last, Pred pred)
-	{
-		return std::remove_if(first, last, pred);
-	}
-
 	/// range overloads
 	template <class ForwardRange, class Pred>
-	inline typename boost::range_iterator<const ForwardRange>::type
-		remove_if(const ForwardRange & rng, const Pred & pred)
+	inline auto remove_if(const ForwardRange & rng, Pred && pred)
 	{
-		return varalgo::remove_if(boost::begin(rng), boost::end(rng), pred);
+		return varalgo::remove_if(boost::begin(rng), boost::end(rng), std::forward<Pred>(pred));
 	}
 
 	template <class ForwardRange, class Pred>
-	inline typename boost::range_iterator<ForwardRange>::type
-		remove_if(ForwardRange & rng, const Pred & pred)
+	inline auto remove_if(ForwardRange & rng, Pred && pred)
 	{
-		return varalgo::remove_if(boost::begin(rng), boost::end(rng), pred);
+		return varalgo::remove_if(boost::begin(rng), boost::end(rng), std::forward<Pred>(pred));
 	}
 
 	template <boost::range_return_value re, class ForwardRange, class Pred>
-	inline typename boost::range_return<const ForwardRange, re>::type
-		remove_if(const ForwardRange & rng, const Pred & pred)
+	inline auto remove_if(const ForwardRange & rng, Pred && pred)
+		-> typename boost::range_return<const ForwardRange, re>::type
 	{
 		return boost::range_return<const ForwardRange, re>::pack(
-			varalgo::remove_if(boost::begin(rng), boost::end(rng), pred),
+			varalgo::remove_if(boost::begin(rng), boost::end(rng), std::forward<Pred>(pred)),
 			rng);
 	}
 
 	template <boost::range_return_value re, class ForwardRange, class Pred>
-	inline typename boost::range_return<ForwardRange, re>::type
-		remove_if(ForwardRange & rng, const Pred & pred)
+	inline auto remove_if(ForwardRange & rng, Pred && pred)
+		-> typename boost::range_return<ForwardRange, re>::type
 	{
 		return boost::range_return<ForwardRange, re>::pack(
-			varalgo::remove_if(boost::begin(rng), boost::end(rng), pred),
+			varalgo::remove_if(boost::begin(rng), boost::end(rng), std::forward<Pred>(pred)),
 			rng);
 	}
 }

@@ -1,64 +1,33 @@
 #pragma once
-
 #include <algorithm>
-
+#include <varalgo/std_variant_traits.hpp>
 #include <boost/range.hpp>
-#include <boost/range/detail/range_return.hpp>
-#include <boost/variant/variant.hpp>
-#include <boost/variant/static_visitor.hpp>
-#include <boost/variant/apply_visitor.hpp>
 
-namespace varalgo{
-
-	template <class ForwardIterator, class Type>
-	struct replace_if_visitor :
-		boost::static_visitor<void>
+namespace varalgo
+{
+	template <class ForwardIterator, class Type, class Pred>
+	inline void replace_if(ForwardIterator first, ForwardIterator last, Pred && pred, const Type & new_val)
 	{
-		ForwardIterator first, last;
-		const Type & new_val;
-
-		replace_if_visitor(ForwardIterator first, ForwardIterator last, const Type & new_val)
-			: first(first), last(last), new_val(new_val) {}
-
-		template <class Pred>
-		inline void operator()(Pred pred) const
+		auto alg = [&first, &last, &new_val](auto && pred)
 		{
-			std::replace_if(first, last, pred, new_val);
-		}
-	};
+			return std::replace_if(first, last, std::forward<decltype(pred)>(pred), new_val);
+		};
 
-	template <class ForwardIterator, class Type, class... VaraintTypes>
-	inline void
-		replace_if(ForwardIterator first, ForwardIterator last,
-		           const boost::variant<VaraintTypes...> & pred, const Type & new_val)
-	{
-		boost::apply_visitor(
-			replace_if_visitor<ForwardIterator, Type> {first, last, new_val},
-			pred);
+		return variant_traits<std::decay_t<Pred>>::visit(std::move(alg), std::forward<Pred>(pred));
 	}
 	
-	template <class ForwardIterator, class Type, class Pred>
-	inline void
-		replace_if(ForwardIterator first, ForwardIterator last,
-		           Pred pred, const Type & new_val)
-	{
-		std::replace_if(first, last, pred, new_val);
-	}
-
 	/// range overloads
 	template <class ForwardRange, class Type, class Pred>
-	inline const ForwardRange &
-		replace_if(const ForwardRange & rng, const Pred & pred, const Type & new_val)
+	inline const ForwardRange & replace_if(const ForwardRange & rng, Pred && pred, const Type & new_val)
 	{
-		varalgo::replace_if(boost::begin(rng), boost::end(rng), pred, new_val);
+		varalgo::replace_if(boost::begin(rng), boost::end(rng), std::forward<Pred>(pred), new_val);
 		return rng;
 	}
 
 	template <class ForwardRange, class Type, class Pred>
-	inline ForwardRange &
-		replace_if(ForwardRange & rng, const Pred & pred, const Type & new_val)
+	inline ForwardRange & replace_if(ForwardRange & rng, Pred && pred, const Type & new_val)
 	{
-		varalgo::replace_if(boost::begin(rng), boost::end(rng), pred, new_val);
+		varalgo::replace_if(boost::begin(rng), boost::end(rng), std::forward<Pred>(pred), new_val);
 		return rng;
 	}
 }

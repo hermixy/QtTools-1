@@ -1,46 +1,24 @@
 #pragma once
-
 #include <algorithm>
-
+#include <varalgo/std_variant_traits.hpp>
 #include <boost/range.hpp>
-#include <boost/variant/variant.hpp>
-#include <boost/variant/static_visitor.hpp>
-#include <boost/variant/apply_visitor.hpp>
 
 namespace varalgo
 {
-	template <class ForwardIterator>
-	struct is_partitioned_visitor : boost::static_visitor<bool>
-	{
-		ForwardIterator first, last;
-		is_partitioned_visitor(ForwardIterator first, ForwardIterator last)
-			: first(first), last(last) {}
-
-		template <class Pred>
-		inline bool operator()(Pred pred) const
-		{
-			return std::is_partitioned(first, last, pred);
-		}
-	};
-
-	template <class ForwardIterator, class... VariantTypes>
-	inline bool is_partitioned(ForwardIterator first, ForwardIterator last, const
-	                      boost::variant<VariantTypes...> & pred)
-	{
-		return boost::apply_visitor(is_partitioned_visitor<ForwardIterator> {first, last}, pred);
-	}
-
 	template <class ForwardIterator, class Pred>
-	inline bool is_partitioned(ForwardIterator first, ForwardIterator last, const
-	                      Pred pred)
+	inline bool is_partitioned(ForwardIterator first, ForwardIterator last, Pred && pred)
 	{
-		return std::is_partitioned(first, last, pred);
+		auto alg = [&first, &last](auto && pred)
+		{
+			return std::is_partitioned(first, last, std::forward<decltype(pred)>(pred));
+		};
+
+		return variant_traits<std::decay_t<Pred>>::visit(std::move(alg), std::forward<Pred>(pred));
 	}
 
 	template <class ForwardRange, class Pred>
-	inline bool is_partitioned(const ForwardRange & rng, const Pred & pred)
+	inline bool is_partitioned(const ForwardRange & rng, Pred && pred)
 	{
-		return varalgo::is_partitioned(boost::begin(rng), boost::end(rng), pred);
+		return varalgo::is_partitioned(boost::begin(rng), boost::end(rng), std::forward<Pred>(pred));
 	}
 }
-

@@ -1,73 +1,50 @@
 #pragma once
-
 #include <algorithm>
-
+#include <varalgo/std_variant_traits.hpp>
 #include <boost/range.hpp>
-#include <boost/range/detail/range_return.hpp>
-#include <boost/variant/variant.hpp>
-#include <boost/variant/static_visitor.hpp>
-#include <boost/variant/apply_visitor.hpp>
 
 namespace varalgo
 {
-	template <class BidirectionalIterator>
-	struct stable_partition_visitor : boost::static_visitor<BidirectionalIterator>
-	{
-		BidirectionalIterator first, last;
-		stable_partition_visitor(BidirectionalIterator first, BidirectionalIterator last)
-			: first(first), last(last) {}
-
-		template <class Pred>
-		inline BidirectionalIterator operator()(Pred pred) const
-		{
-			return std::stable_partition(first, last, pred);
-		}
-	};
-
-	template <class BidirectionalIterator, class... VariantTypes>
-	inline BidirectionalIterator stable_partition(BidirectionalIterator first, BidirectionalIterator last,
-	                                       const boost::variant<VariantTypes...> & pred)
-	{
-		return boost::apply_visitor(stable_partition_visitor<BidirectionalIterator> {first, last}, pred);
-	}
-
 	template <class BidirectionalIterator, class Pred>
-	inline BidirectionalIterator stable_partition(BidirectionalIterator first, BidirectionalIterator last, Pred pred)
+	inline BidirectionalIterator stable_partition(BidirectionalIterator first, BidirectionalIterator last, Pred && pred)
 	{
-		return std::stable_partition(first, last, pred);
+		auto alg = [&first, &last](auto && pred)
+		{
+			return std::stable_partition(first, last, std::forward<decltype(pred)>(pred));
+		};
+
+		return variant_traits<std::decay_t<Pred>>::visit(std::move(alg), std::forward<Pred>(pred));
 	}
 
 	/// range overload
 	template <class BidirectionalRange, class Pred>
-	inline typename boost::range_const_iterator<BidirectionalRange>::type
-		stable_partition(const BidirectionalRange & rng, const Pred & pred)
+	inline auto stable_partition(const BidirectionalRange & rng, Pred && pred)
 	{
-		return varalgo::stable_partition(boost::begin(rng), boost::end(rng), pred);
+		return varalgo::stable_partition(boost::begin(rng), boost::end(rng), std::forward<Pred>(pred));
 	}
 
 	template <class BidirectionalRange, class Pred>
-	inline typename boost::range_iterator<BidirectionalRange>::type
-		stable_partition(BidirectionalRange & rng, const Pred & pred)
+	inline auto stable_partition(BidirectionalRange & rng, Pred && pred)
 	{
-		return varalgo::stable_partition(boost::begin(rng), boost::end(rng), pred);
+		return varalgo::stable_partition(boost::begin(rng), boost::end(rng), std::forward<Pred>(pred));
 	}
 
 	/// range overload
 	template <boost::range_return_value re, class BidirectionalRange, class Pred>
-	inline typename boost::range_return<const BidirectionalRange, re>::type
-		stable_partition(const BidirectionalRange & rng, const Pred & pred)
+	inline auto stable_partition(const BidirectionalRange & rng, Pred && pred)
+		-> typename boost::range_return<const BidirectionalRange, re>::type
 	{
 		return boost::range_return<const BidirectionalRange, re>::pack(
-			varalgo::stable_partition(rng, pred),
+			varalgo::stable_partition(rng, std::forward<Pred>(pred)),
 			rng);
 	}
 
 	template <boost::range_return_value re, class BidirectionalRange, class Pred>
-	inline typename boost::range_return<BidirectionalRange, re>::type
-		stable_partition(BidirectionalRange & rng, const Pred & pred)
+	inline auto stable_partition(BidirectionalRange & rng, Pred && pred)
+		-> typename boost::range_return<BidirectionalRange, re>::type
 	{
 		return boost::range_return<BidirectionalRange, re>::pack(
-			varalgo::stable_partition(rng, pred),
+			varalgo::stable_partition(rng, std::forward<Pred>(pred)),
 			rng);
 	}
 }

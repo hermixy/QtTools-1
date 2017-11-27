@@ -4,15 +4,15 @@
 /// those wrappers allows to pass boost::variant<Pred1, Pred2, ...> in place of sort predicate
 /// that variant will be dispatched and algorithm will be called with actual predicate
 
-#include <ext/varalgo/sorting_algo.hpp>
-#include <ext/varalgo/on_sorted_algo.hpp>
-#include <ext/varalgo/set_operations.hpp>
+#include <varalgo/sorting_algo.hpp>
+#include <varalgo/on_sorted_algo.hpp>
+#include <varalgo/set_operations.hpp>
 
-#include <ext/varalgo/minmax.hpp>
-#include <ext/varalgo/minmax_element.hpp>
+#include <varalgo/minmax.hpp>
+#include <varalgo/minmax_element.hpp>
 
-#include <ext/varalgo/partition_algo.hpp>
+#include <varalgo/partition_algo.hpp>
 
-#include <ext/varalgo/non-modifying_algo.hpp>
-#include <ext/varalgo/modifying_algo.hpp>
-#include <ext/varalgo/for_each.hpp>
+#include <varalgo/non_modifying_algo.hpp>
+#include <varalgo/modifying_algo.hpp>
+#include <varalgo/for_each.hpp>

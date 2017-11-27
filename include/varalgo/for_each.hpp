@@ -1,59 +1,31 @@
 #pragma once
-
 #include <algorithm>
-
+#include <varalgo/std_variant_traits.hpp>
 #include <boost/range.hpp>
-#include <boost/range/detail/range_return.hpp>
-#include <boost/variant/variant.hpp>
-#include <boost/variant/static_visitor.hpp>
-#include <boost/variant/apply_visitor.hpp>
 
-namespace varalgo{
-
-	template <class InputIterator>
-	struct for_each_visitor :
-		boost::static_visitor<void>
-	{
-		InputIterator first, last;
-
-		for_each_visitor(InputIterator first, InputIterator last)
-			: first(first), last(last) {}
-
-		template <class Pred>
-		inline void operator()(Pred pred) const
-		{
-			std::for_each(first, last, pred);
-		}
-	};
-
-	template <class InputIterator, class... VaraintTypes>
-	inline void
-		for_each(InputIterator first, InputIterator last, const boost::variant<VaraintTypes...> & pred)
-	{
-		boost::apply_visitor(
-			for_each_visitor<InputIterator> {first, last},
-			pred);
-	}
-	
+namespace varalgo
+{
 	template <class InputIterator, class Pred>
-	inline Pred
-		for_each(InputIterator first, InputIterator last, Pred pred)
+	inline void for_each(InputIterator first, InputIterator last, Pred && pred)
 	{
-		return std::for_each(first, last, pred);
+		auto alg = [&first, &last](auto && pred)
+		{
+			return std::for_each(first, last, std::forward<decltype(pred)>(pred));
+		};
+
+		return variant_traits<std::decay_t<Pred>>::visit(std::move(alg), std::forward<Pred>(pred));
 	}
 
 	/// range overloads
 	template <class SinglePassRange, class Pred>
-	inline void
-		for_each(const SinglePassRange & rng, const Pred & pred)
+	inline auto for_each(const SinglePassRange & rng, Pred && pred)
 	{
-		varalgo::for_each(boost::begin(rng), boost::end(rng), pred);
+		return varalgo::for_each(boost::begin(rng), boost::end(rng), std::forward<Pred>(pred));
 	}
 
 	template <class SinglePassRange, class Pred>
-	inline void
-		for_each(SinglePassRange & rng, const Pred & pred)
+	inline void for_each(SinglePassRange & rng, Pred && pred)
 	{
-		varalgo::for_each(boost::begin(rng), boost::end(rng), pred);
+		return varalgo::for_each(boost::begin(rng), boost::end(rng), std::forward<Pred>(pred));
 	}
 }

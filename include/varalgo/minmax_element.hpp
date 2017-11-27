@@ -1,200 +1,125 @@
 #pragma once
-
 #include <algorithm>
-
+#include <varalgo/std_variant_traits.hpp>
 #include <boost/range.hpp>
-#include <boost/range/detail/range_return.hpp>
-#include <boost/variant/variant.hpp>
-#include <boost/variant/static_visitor.hpp>
-#include <boost/variant/apply_visitor.hpp>
 
-namespace varalgo {
-
-	template <class ForwardIterator>
-	struct min_element_visitor : boost::static_visitor<ForwardIterator>
-	{
-		ForwardIterator first, last;
-
-		min_element_visitor(ForwardIterator first, ForwardIterator last)
-			: first(first), last(last) {}
-
-		template <class Pred>
-		inline ForwardIterator operator()(Pred pred) const
-		{
-			return std::min_element(first, last, pred);
-		}
-	};
-
-	template <class ForwardIterator>
-	struct max_element_visitor : boost::static_visitor<ForwardIterator>
-	{
-		ForwardIterator first, last;
-
-		max_element_visitor(ForwardIterator first, ForwardIterator last)
-			: first(first), last(last) {}
-
-		template <class Pred>
-		inline ForwardIterator operator()(Pred pred) const
-		{
-			return std::max_element(first, last, pred);
-		}
-	};
-
-	template <class ForwardIterator>
-	struct minmax_element_visitor : boost::static_visitor<std::pair<ForwardIterator,ForwardIterator>>
-	{
-		ForwardIterator first, last;
-
-		minmax_element_visitor(ForwardIterator first, ForwardIterator last)
-			: first(first), last(last) {}
-
-		template <class Pred>
-		inline ForwardIterator operator()(Pred pred) const
-		{
-			return std::minmax_element(first, last, pred);
-		}
-	};
-
+namespace varalgo
+{
 	/************************************************************************/
 	/*                     min_element                                      */
 	/************************************************************************/
-	template <class ForwardIterator, class... VariantTypes>
-	inline ForwardIterator min_element(ForwardIterator first, ForwardIterator last,
-	                                   const boost::variant<VariantTypes...> & pred)
-	{
-		return boost::apply_visitor(
-			min_element_visitor<ForwardIterator> {first, last},
-			pred);
-	}
-
 	template <class ForwardIterator, class Pred>
-	inline ForwardIterator min_element(ForwardIterator first, ForwardIterator last, Pred pred)
+	inline ForwardIterator min_element(ForwardIterator first, ForwardIterator last, Pred && pred)
 	{
-		return std::min_element(first, last, pred);
+		auto alg = [&first, &last](auto && pred)
+		{
+			return std::min_element(first, last, std::forward<decltype(pred)>(pred));
+		};
+
+		return variant_traits<std::decay_t<Pred>>::visit(std::move(alg), std::forward<Pred>(pred));		
 	}
 
 	/// range overloads
 	template <class ForwardRange, class Pred>
-	inline typename boost::range_const_iterator<ForwardRange>::type
-		min_element(const ForwardRange & rng, Pred pred)
+	inline auto min_element(const ForwardRange & rng, Pred && pred)
 	{
-		return min_element(boost::begin(rng), boost::end(rng), pred);
+		return min_element(boost::begin(rng), boost::end(rng), std::forward<Pred>(pred));
 	}
 
 	template <class ForwardRange, class Pred>
-	inline typename boost::range_iterator<ForwardRange>::type
-		min_element(ForwardRange & rng, Pred pred)
+	inline auto min_element(ForwardRange & rng, Pred && pred)
 	{
-		return min_element(boost::begin(rng), boost::end(rng), pred);
+		return min_element(boost::begin(rng), boost::end(rng), std::forward<Pred>(pred));
 	}
 
 	template <boost::range_return_value re, class ForwardRange, class Pred>
-	inline typename boost::range_return<const ForwardRange, re>::type
-		min_element(const ForwardRange & rng, Pred pred)
+	inline auto min_element(const ForwardRange & rng, Pred pred)
+		-> typename boost::range_return<const ForwardRange, re>::type
 	{
 		return boost::range_return<const ForwardRange, re>::pack(
-			min_element(boost::begin(rng), boost::end(rng), pred),
+			min_element(boost::begin(rng), boost::end(rng), std::forward<Pred>(pred)),
 			rng);
 	}
 
 	template <boost::range_return_value re, class ForwardRange, class Pred>
-	inline typename boost::range_return<ForwardRange, re>::type
-		min_element(ForwardRange & rng, Pred pred)
+	inline auto min_element(ForwardRange & rng, Pred pred)
+		-> typename boost::range_return<ForwardRange, re>::type
 	{
 		return boost::range_return<ForwardRange, re>::pack(
-			min_element(boost::begin(rng), boost::end(rng), pred),
+			min_element(boost::begin(rng), boost::end(rng), std::forward<Pred>(pred)),
 			rng);
 	}
 
 	/************************************************************************/
 	/*                max_element                                           */
 	/************************************************************************/
-	template <class ForwardIterator, class... VariantTypes>
-	inline ForwardIterator max_element(ForwardIterator first, ForwardIterator last,
-	                                   const boost::variant<VariantTypes...> & pred)
-	{
-		return boost::apply_visitor(
-			max_element_visitor<ForwardIterator> {first, last},
-			pred);
-	}
-
 	template <class ForwardIterator, class Pred>
-	inline ForwardIterator max_element(ForwardIterator first, ForwardIterator last, Pred pred)
+	inline ForwardIterator max_element(ForwardIterator first, ForwardIterator last, Pred && pred)
 	{
-		return std::max_element(first, last, pred);
+		auto alg = [&first, &last](auto && pred)
+		{
+			return std::max_element(first, last, std::forward<decltype(pred)>(pred));
+		};
+
+		return variant_traits<std::decay_t<Pred>>::visit(std::move(alg), std::forward<Pred>(pred));
 	}
 
 	/// range overloads
 	template <class ForwardRange, class Pred>
-	inline typename boost::range_const_iterator<ForwardRange>::type
-		max_element(const ForwardRange & rng, Pred pred)
+	inline auto max_element(const ForwardRange & rng, Pred && pred)
 	{
-		return max_element(boost::begin(rng), boost::end(rng), pred);
+		return max_element(boost::begin(rng), boost::end(rng), std::forward<Pred>(pred));
 	}
 
 	template <class ForwardRange, class Pred>
-	inline typename boost::range_iterator<ForwardRange>::type
-		max_element(ForwardRange & rng, Pred pred)
+	inline auto max_element(ForwardRange & rng, Pred && pred)
 	{
-		return max_element(boost::begin(rng), boost::end(rng), pred);
+		return max_element(boost::begin(rng), boost::end(rng), std::forward<Pred>(pred));
 	}
 
 	template <boost::range_return_value re, class ForwardRange, class Pred>
-	inline typename boost::range_return<const ForwardRange, re>::type
-		max_element(const ForwardRange & rng, Pred pred)
+	inline auto max_element(const ForwardRange & rng, Pred pred)
+		-> typename boost::range_return<const ForwardRange, re>::type
 	{
 		return boost::range_return<const ForwardRange, re>::pack(
-			max_element(boost::begin(rng), boost::end(rng), pred),
+			max_element(boost::begin(rng), boost::end(rng), std::forward<Pred>(pred)),
 			rng);
 	}
 
 	template <boost::range_return_value re, class ForwardRange, class Pred>
-	inline typename boost::range_return<ForwardRange, re>::type
-		max_element(ForwardRange & rng, Pred pred)
+	inline auto max_element(ForwardRange & rng, Pred pred)
+		-> typename boost::range_return<ForwardRange, re>::type
 	{
 		return boost::range_return<ForwardRange, re>::pack(
-			max_element(boost::begin(rng), boost::end(rng), pred),
+			max_element(boost::begin(rng), boost::end(rng), std::forward<Pred>(pred)),
 			rng);
 	}
 
 	/************************************************************************/
 	/*                minmax_element                                        */
 	/************************************************************************/
-	template <class ForwardIterator, class... VariantTypes>
-	inline std::pair<ForwardIterator, ForwardIterator>
-		minmax_element(ForwardIterator first, ForwardIterator last,
-		               const boost::variant<VariantTypes...> & pred)
-	{
-		return boost::apply_visitor(
-			minmax_element_visitor<ForwardIterator> {first, last},
-			pred);
-	}
-
 	template <class ForwardIterator, class Pred>
 	inline std::pair<ForwardIterator, ForwardIterator>
-		minmax_element(ForwardIterator first, ForwardIterator last, Pred pred)
+		minmax_element(ForwardIterator first, ForwardIterator last, Pred && pred)
 	{
-		return std::minmax_element(first, last, pred);
+		auto alg = [&first, &last](auto && pred)
+		{
+			return std::minmax_element(first, last, std::forward<decltype(pred)>(pred));
+		};
+
+		return variant_traits<std::decay_t<Pred>>::visit(std::move(alg), std::forward<Pred>(pred));
 	}
 
 	/// range overloads
 	template <class ForwardRange, class Pred>
-	inline std::pair<
-		typename boost::range_const_iterator<ForwardRange>::type,
-		typename boost::range_const_iterator<ForwardRange>::type
-	>
-		minmax_element(const ForwardRange & rng, Pred pred)
+	inline auto minmax_element(const ForwardRange & rng, Pred && pred)
 	{
-		return varalgo::minmax_element(boost::begin(rng), boost::end(rng), pred);
+		return varalgo::minmax_element(boost::begin(rng), boost::end(rng), std::forward<Pred>(pred));
 	}
 
 	template <class ForwardRange, class Pred>
-	inline std::pair<
-		typename boost::range_iterator<ForwardRange>::type,
-		typename boost::range_iterator<ForwardRange>::type
-	>
-		minmax_element(ForwardRange & rng, Pred pred)
+	inline auto minmax_element(ForwardRange & rng, Pred && pred)
 	{
-		return varalgo::minmax_element(boost::begin(rng), boost::end(rng), pred);
+		return varalgo::minmax_element(boost::begin(rng), boost::end(rng), std::forward<Pred>(pred));
 	}
 }

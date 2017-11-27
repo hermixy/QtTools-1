@@ -1,6 +1,5 @@
 #pragma once
 
-
 #include <varalgo/copy_if.hpp>
 #include <varalgo/transform.hpp>
 #include <varalgo/remove_if.hpp>
