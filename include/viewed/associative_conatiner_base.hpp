@@ -11,7 +11,7 @@ namespace viewed
 	struct container_traits
 	{
 		//////////////////////////////////////////////////////////////////////////
-		///                           types                                       
+		///                           types
 		//////////////////////////////////////////////////////////////////////////
 		/// container class that stores value_type,
 		/// main_store_type should provide stable pointers/references,
@@ -22,7 +22,7 @@ namespace viewed
 		typedef implementaion_defined signal_store_type;
 
 		//////////////////////////////////////////////////////////////////////////
-		///                   traits functions/functors                          
+		///                   traits functions/functors
 		//////////////////////////////////////////////////////////////////////////
 		/// function interface can be static function members or static functors members.
 		/// if overloading isn't needed static function members  - will be ok,
@@ -92,6 +92,8 @@ namespace viewed
 	/// @Param Element type
 	/// @Param Traits traits class describes various aspects of container,
 	///        see description above, also see hash_container_traits and ordered_container_traits for example
+	/// @Param SignalTraits traits class describes various aspects of signaling,
+	///        see description above, also see default_signal_traits
 	template <
 		class Type,
 		class Traits,
@@ -99,7 +101,7 @@ namespace viewed
 	>
 	class associative_conatiner_base : protected Traits
 	{
-		typedef associative_conatiner_base<Type, Traits> self_type;
+		typedef associative_conatiner_base<Type, Traits, SignalTraits> self_type;
 	
 	protected:
 		typedef Traits        traits_type;

@@ -153,6 +153,7 @@
     <ClInclude Include="include\viewed\qt_model.hpp" />
     <ClInclude Include="include\viewed\refilter_type.hpp" />
     <ClInclude Include="include\viewed\selectable_sfview_qtbase.hpp" />
+    <ClInclude Include="include\viewed\sequence_container.hpp" />
     <ClInclude Include="include\viewed\sfview_qtbase.hpp" />
     <ClInclude Include="include\viewed\signal_traits.hpp" />
     <ClInclude Include="include\viewed\view_base.hpp" />
