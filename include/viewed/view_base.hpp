@@ -2,7 +2,7 @@
 #include <vector>
 #include <ext/range/range_traits.hpp>
 
-#include <boost/iterator/indirect_iterator.hpp>
+#include <boost/iterator/iterator_adaptor.hpp>
 #include <boost/range/algorithm_ext.hpp>
 #include <boost/range/adaptor/transformed.hpp>
 
@@ -21,6 +21,10 @@ namespace viewed
 	/// 
 	/// container must meet following conditions:
 	/// * STL compatible interface(types, methods)
+	/// * view_pointer_type - pointer typedef, typically const value_type *
+	///   get_view_pointer(const_reference ref) -> view_pointer_type - static member function
+	///   get_view_reference(view_pointer_type ptr) -> const_reference - static member function
+	///   
 	/// * at least forward iterator category, but pointers/references must be stable, iterators can be unstable
 	/// * have member type:
 	///     signal_range_type - random access range of valid pointers(at least at moment of call) to value_type
@@ -67,19 +71,48 @@ namespace viewed
 		typedef Container container_type;
 		/// container interface typedefs
 		typedef typename container_type::value_type      value_type;
-		typedef const value_type *                       const_pointer;
-		typedef const value_type &                       const_reference;
+		typedef typename container_type::const_pointer   const_pointer;
+		typedef typename container_type::const_reference const_reference;
 		typedef const_reference                          reference;
 		typedef const_pointer                            pointer;
 
 	protected:
+		// store <-> view exchange
+		typedef typename container_type::view_pointer_type view_pointer_type;
+		static_assert(std::is_pointer_v<view_pointer_type>);
+
+		static view_pointer_type get_view_pointer(const value_type & val)  { return container_type::get_view_pointer(val); }
+		static const_reference   get_view_reference(view_pointer_type ptr) { return container_type::get_view_pointer(ptr); }
+
+	protected:
 		typedef typename container_type::signal_range_type   signal_range_type;
 		typedef typename container_type::scoped_connection   scoped_connection;
-		typedef std::vector<const value_type *>              store_type;
+		typedef std::vector<view_pointer_type>               store_type;
 
 	public:
 		typedef typename store_type::size_type           size_type;
 		typedef typename store_type::difference_type     difference_type;
+
+	protected:
+		template <class iterator_base>
+		class iterator_adaptor : public boost::iterator_adaptor<iterator_adaptor<iterator_base>, iterator_base, value_type, boost::use_default, const_reference>
+		{
+			friend boost::iterator_core_access;
+			using base_type = boost::iterator_adaptor<iterator_adaptor<iterator_base>, iterator_base, value_type, boost::use_default, const_reference>;
+
+		private:
+			decltype(auto) dereference() const noexcept { return self_type::get_view_reference(*this->base_reference()); }
+
+		public:
+			using base_type::base_type;
+		};
+
+	public:
+		using const_iterator         = iterator_adaptor<typename store_type::const_iterator>;
+		using const_reverse_iterator = iterator_adaptor<typename store_type::const_reverse_iterator>;
+
+		using iterator         = const_iterator;
+		using reverse_iterator = const_reverse_iterator;
 
 	protected:
 		container_type * m_owner = nullptr; // pointer to owning container, can be used by derived classes
@@ -92,30 +125,20 @@ namespace viewed
 
 	public:
 		/// container interface
-		typedef boost::indirect_iterator <
-			typename store_type::const_iterator
-		> const_iterator;
-		typedef boost::indirect_iterator <
-			typename store_type::const_reverse_iterator
-		> const_reverse_iterator;
+		const_iterator begin() const noexcept  { return const_iterator(m_store.begin()); }
+		const_iterator end() const noexcept    { return const_iterator(m_store.end()); }
+		const_iterator cbegin() const noexcept { return const_iterator(m_store.cbegin()); }
+		const_iterator cend() const noexcept   { return const_iterator(m_store.cend()); }
 
-		typedef const_iterator iterator;
-		typedef const_reverse_iterator reverse_iterator;
+		const_reverse_iterator rbegin() const noexcept  { return const_reverse_iterator(m_store.rbegin()); }
+		const_reverse_iterator rend() const noexcept    { return const_reverse_iterator(m_store.rend()); }
+		const_reverse_iterator crbegin() const noexcept { return const_reverse_iterator(m_store.crbegin()); }
+		const_reverse_iterator crend() const noexcept   { return const_reverse_iterator(m_store.crend()); }
 
-		const_iterator begin() const noexcept { return m_store.begin(); }
-		const_iterator end() const noexcept { return m_store.end(); }
-		const_iterator cbegin() const noexcept { return m_store.cbegin(); }
-		const_iterator cend() const noexcept { return m_store.cend(); }
-
-		const_reverse_iterator rbegin() const noexcept { return m_store.rbegin(); }
-		const_reverse_iterator rend() const noexcept { return m_store.rend(); }
-		const_reverse_iterator crbegin() const noexcept { return m_store.crbegin(); }
-		const_reverse_iterator crend() const noexcept { return m_store.crend(); }
-
-		const_reference at(size_type idx) const { return *m_store.at(idx); }
-		const_reference operator [](size_type idx) const { return *m_store.operator[](idx); }
-		const_reference front() const { return *m_store.front(); }
-		const_reference back() const { return *m_store.back(); }
+		const_reference at(size_type idx) const { return get_view_reference(m_store.at(idx)); }
+		const_reference operator [](size_type idx) const { return get_view_reference(m_store.operator[](idx)); }
+		const_reference front() const { return get_view_reference(m_store.front()); }
+		const_reference back() const  { return get_view_reference(m_store.back()); }
 
 		size_type size() const noexcept { return m_store.size(); }
 		bool empty() const noexcept { return m_store.empty(); }
@@ -164,9 +187,6 @@ namespace viewed
 		virtual void clear_view();
 		
 	protected:
-		/// helper method to make a pointer
-		static const_pointer make_pointer(const value_type & val) { return &val; }
-
 		/// removes from m_store records from recs
 		/// complexity N log2 M,
 		/// where N = m_store.size(), M = recs.size()
@@ -196,7 +216,7 @@ namespace viewed
 	template <class Container>
 	void view_base<Container>::reinit_view()
 	{
-		auto rng = *m_owner | boost::adaptors::transformed(make_pointer);
+		auto rng = *m_owner | boost::adaptors::transformed(get_view_pointer);
 		ext::assign(m_store, boost::begin(rng), boost::end(rng));
 	}
 
@@ -218,7 +238,7 @@ namespace viewed
 
 		if (not sorted_erased.empty())
 		{
-			auto todel = [&sorted_erased](const_pointer rec)
+			auto todel = [&sorted_erased](view_pointer_type rec)
 			{
 				return boost::binary_search(sorted_erased, rec);
 			};
@@ -248,7 +268,7 @@ namespace viewed
 	{
 		if (sorted_erased.empty()) return;
 
-		auto todel = [&sorted_erased](const_pointer rec)
+		auto todel = [&sorted_erased](view_pointer_type rec)
 		{
 			return boost::binary_search(sorted_erased, rec);
 		};

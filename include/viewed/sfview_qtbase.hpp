@@ -46,7 +46,7 @@ namespace viewed
 
 	public:
 		using typename base_type::container_type;
-		using typename base_type::const_pointer;
+		using typename base_type::view_pointer_type;
 
 		typedef SortPred sort_pred_type;
 		typedef FilterPred filter_pred_type;
@@ -64,7 +64,7 @@ namespace viewed
 		using base_type::m_owner;
 		using base_type::m_store;
 		using base_type::get_model;
-		using base_type::make_pointer;
+		using base_type::get_view_pointer;
 		using base_type::change_indexes;
 		using base_type::emit_changed;
 
@@ -86,8 +86,8 @@ namespace viewed
 		filter_pred_type filter_pred() const { return m_filter_pred; }
 
 	protected:
-		static void mark_pointer(const_pointer & ptr) { reinterpret_cast<std::uintptr_t &>(ptr) |= 1; }
-		static bool is_marked(const_pointer ptr) { return reinterpret_cast<std::uintptr_t>(ptr) & 1; }
+		static void mark_pointer(view_pointer_type & ptr) { reinterpret_cast<std::uintptr_t &>(ptr) |= 1; }
+		static bool is_marked(view_pointer_type ptr) { return reinterpret_cast<std::uintptr_t>(ptr) & 1; }
 
 	public:
 		/// reinitializes view from owner
@@ -139,7 +139,7 @@ namespace viewed
 		virtual void sort_and_notify(store_iterator first, store_iterator last);
 
 		/// get pair of iterators that hints where to search element
-		virtual search_hint_type search_hint(const_pointer ptr) const;
+		virtual search_hint_type search_hint(view_pointer_type ptr) const;
 
 		/// refilters m_store with m_filter_pred according to rtype:
 		/// * same        - does nothing and immediately returns(does not emit any qt signals)
@@ -178,13 +178,13 @@ namespace viewed
 		auto * model = this->get_model();
 		model->beginResetModel();
 
-		auto range = *m_owner | boost::adaptors::transformed(make_pointer);
+		auto range = *m_owner | boost::adaptors::transformed(get_view_pointer);
 		if (!m_filter_pred)
 			m_store.assign(range.begin(), range.end());
 		else
 		{
 			m_store.clear();
-			auto pred = make_indirect_fun(m_filter_pred);
+			auto pred = viewed::make_indirect_fun(m_filter_pred);
 			std::copy_if(range.begin(), range.end(), std::back_inserter(m_store), pred);
 		}
 
@@ -363,7 +363,7 @@ namespace viewed
 	void sfview_qtbase<Container, SortPred, FilterPred>::
 		merge_newdata(store_iterator first, store_iterator middle, store_iterator last, bool resort_old /*= true*/)
 	{
-		auto comp = make_indirect_fun(m_sort_pred);
+		auto comp = viewed::make_indirect_fun(m_sort_pred);
 
 		if (resort_old) varalgo::stable_sort(first, middle, comp);
 		varalgo::sort(middle, last, comp);
@@ -379,7 +379,7 @@ namespace viewed
 		assert(last - first == ilast - ifirst);
 		assert(middle - first == imiddle - ifirst);
 
-		auto comp = make_get_functor<0>(make_indirect_fun(m_sort_pred));
+		auto comp = viewed::make_get_functor<0>(viewed::make_indirect_fun(m_sort_pred));
 
 		auto zfirst  = ext::make_zip_iterator(first, ifirst);
 		auto zmiddle = ext::make_zip_iterator(middle, imiddle);
@@ -393,7 +393,7 @@ namespace viewed
 	template <class Container, class SortPred, class FilterPred>
 	void sfview_qtbase<Container, SortPred, FilterPred>::sort(store_iterator first, store_iterator last)
 	{
-		auto comp = make_indirect_fun(m_sort_pred);
+		auto comp = viewed::make_indirect_fun(m_sort_pred);
 		varalgo::stable_sort(first, last, comp);
 	}
 
@@ -402,7 +402,7 @@ namespace viewed
 		sort(store_iterator first, store_iterator last,
 		     int_vector::iterator ifirst, int_vector::iterator ilast)
 	{
-		auto comp = make_get_functor<0>(make_indirect_fun(m_sort_pred));
+		auto comp = viewed::make_get_functor<0>(viewed::make_indirect_fun(m_sort_pred));
 
 		auto zfirst = ext::make_zip_iterator(first, ifirst);
 		auto zlast = ext::make_zip_iterator(last, ilast);
@@ -430,9 +430,9 @@ namespace viewed
 	}
 
 	template <class Container, class SortPred, class FilterPred>
-	auto sfview_qtbase<Container, SortPred, FilterPred>::search_hint(const_pointer ptr) const -> search_hint_type
+	auto sfview_qtbase<Container, SortPred, FilterPred>::search_hint(view_pointer_type ptr) const -> search_hint_type
 	{
-		auto comp = make_indirect_fun(m_sort_pred);
+		auto comp = viewed::make_indirect_fun(m_sort_pred);
 		return varalgo::equal_range(m_store, ptr, comp);
 	}
 
@@ -454,7 +454,7 @@ namespace viewed
 	{
 		if (!m_filter_pred) return;
 		
-		auto test = [this](const_pointer ptr) { return !m_filter_pred(*ptr); };
+		auto test = [this](view_pointer_type ptr) { return !m_filter_pred(*ptr); };
 
 		int_vector affected_indexes(m_store.size());
 		auto erased_first = affected_indexes.begin();
@@ -481,7 +481,7 @@ namespace viewed
 	void sfview_qtbase<Container, SortPred, FilterPred>::refilter_full()
 	{
 		auto sz = m_store.size();
-		boost::push_back(m_store, *m_owner | boost::adaptors::transformed(make_pointer));
+		boost::push_back(m_store, *m_owner | boost::adaptors::transformed(get_view_pointer));
 
 		auto first = m_store.begin();
 		auto last = m_store.end();

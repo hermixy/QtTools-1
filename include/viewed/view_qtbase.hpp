@@ -5,6 +5,7 @@
 #include <viewed/view_base.hpp>
 #include <viewed/algorithm.hpp>
 
+#include <boost/range/algorithm.hpp>
 #include <boost/range/algorithm_ext.hpp>
 #include <boost/range/adaptor/transformed.hpp>
 
@@ -27,7 +28,7 @@ namespace viewed
 
 	public:
 		using typename base_type::container_type;
-		using typename base_type::const_pointer;
+		using typename base_type::view_pointer_type;
 
 	protected:
 		using typename base_type::store_type;
@@ -35,7 +36,6 @@ namespace viewed
 
 		using base_type::m_store;
 		using base_type::m_owner;
-		using base_type::make_pointer;
 
 		typedef std::vector<int> int_vector;
 		typedef viewed::AbstractItemModel model_type;
@@ -175,7 +175,7 @@ namespace viewed
 		}
 		else
 		{
-			auto test = [&sorted_erased](const_pointer ptr)
+			auto test = [&sorted_erased](view_pointer_type ptr)
 			{
 				return boost::binary_search(sorted_erased, ptr);
 			};
@@ -210,7 +210,7 @@ namespace viewed
 	{
 		if (sorted_erased.empty()) return;
 
-		auto test = [&sorted_erased](const_pointer ptr)
+		auto test = [&sorted_erased](view_pointer_type ptr)
 		{
 			return boost::binary_search(sorted_erased, ptr);
 		};

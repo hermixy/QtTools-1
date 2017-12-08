@@ -150,6 +150,7 @@
     <ClInclude Include="include\viewed\hash_container_base.hpp" />
     <ClInclude Include="include\viewed\indirect_functor.hpp" />
     <ClInclude Include="include\viewed\ordered_container_base.hpp" />
+    <ClInclude Include="include\viewed\ptr_sequence_container.hpp" />
     <ClInclude Include="include\viewed\qt_model.hpp" />
     <ClInclude Include="include\viewed\refilter_type.hpp" />
     <ClInclude Include="include\viewed\selectable_sfview_qtbase.hpp" />

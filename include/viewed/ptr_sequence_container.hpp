@@ -9,10 +9,11 @@
 namespace viewed
 {
 	/*
-	/// container_traits describes store type, etc for sequence_container.
-	/// see also default_sequence_container_traits as default implementations
+	/// container_traits describes store type, etc for ptr_sequence_container.
+	/// see also default_ptr_sequence_container_traits as default implementations
+	/// NOTE: ptr_sequence_container operates on pointer, so value_type and reference both are a pointers.
 	struct container_traits
-	{	    
+	{
 		//////////////////////////////////////////////////////////////////////////
 		///                           types
 		//////////////////////////////////////////////////////////////////////////
@@ -36,29 +37,29 @@ namespace viewed
 		static main_store_type make_store();
 		
 		/// obtains reference from internal_value_type (from main_store_type)
-		static const_reference value_reference(const internal_value_type & val) { return *val; }
-		static       reference value_reference(      internal_value_type & val) { return *val; }
+		static const_reference value_reference(const internal_value_type & val) { return val.get(); }
+		static       reference value_reference(      internal_value_type & val) { return val.get(); }
 
 		/// obtains pointer from internal_value_type (from main_store_type)
 		static const_pointer   value_pointer(const internal_value_type & val)   { return val.get(); }
 		static       pointer   value_pointer(      internal_value_type & val)   { return val.get(); }
 
 		/// Constructs element in internal_value_type form from value_type argument.
-		static internal_value_type make_internal(const value_type & something) { return val; }
+		static internal_value_type make_internal(const value_type * something) { return val; }
 	};
 	*/
 
-	/// default sequence_container traits. Elements stored in vector<std::unique_ptr<Type>>
+	/// default ptr_sequence_container traits. Elements stored in vector<std::unique_ptr<Type>>
 	template <class Type>
-	struct default_sequence_container_traits
+	struct default_ptr_sequence_container_traits
 	{
 		using internal_value_type = std::unique_ptr<Type>;
 		using main_store_type     = std::vector<internal_value_type>;
 		using signal_store_type   = std::vector<const Type *>;
 
-		static main_store_type make_store()                  { return {}; }
-		static auto make_internal(Type && val)               { return std::make_unique<Type>(std::move(val)); }
-		static auto make_internal(const Type & val)          { return std::make_unique<Type>(val); }
+		static main_store_type make_store()                { return {}; }
+		static auto make_internal(const Type * ptr)        { return internal_value_type(ptr); }
+		static auto make_internal(internal_value_type ptr) { return std::move(val); }
 
 		static decltype(auto) value_reference(const internal_value_type & val) { return *val; }
 		static decltype(auto) value_reference(      internal_value_type & val) { return *val; }
@@ -104,16 +105,26 @@ namespace viewed
 	*/
 
 
-	/// sequence_container is build on top of some defined by traits sequence container.
+	/// ptr_sequence_container is build on top of some defined by traits sequence container.
 	/// Generic container with STL compatible interface.
 	///
+	/// This a pointer container with pointer interface,
+	/// it's designed for polymorphic classes hierarchies: QWidget, etc
+	/// 
+	/// NOTE:
+	///   ptr_sequence_container<Type>::value_type => const Type *
+	///   ptr_sequence_container<Type>::reference  => const Type *
+	///   ptr_sequence_container<Type>::pointer    => const Type *
+	///	
+	/// 
 	/// It store data in store specified by traits
-	/// iterators can be unstable, pointers and references - have to be stable
+	/// iterators can be unstable, pointers and references - are stable
 	/// (this is dictated by views, which stores pointers)
 	/// Iterators are read-only. use assign/append/erase to add/remove data
 	/// 
 	/// Emits signals when elements added or erased
-	/// Can be used to build views on this container, see viewed::view_base
+	/// Can be used to build views on this container, see viewed::view_base	
+	/// NOTE: Those views will be ptr views to: value_type, reference will be const pointers
 	/// 
 	/// @Param Element type
 	/// @Param Traits traits class describes various aspects of container,
@@ -122,12 +133,12 @@ namespace viewed
 	///        see description above, also see default_signal_traits
 	template <
 		class Type,
-		class Traits = default_sequence_container_traits<Type>,
+		class Traits = default_ptr_sequence_container_traits<Type>,
 		class SignalTraits = default_signal_traits<Type>
 	>
-	class sequence_container : protected Traits
+	class ptr_sequence_container : protected Traits
 	{
-		using self_type = sequence_container<Type, Traits, SignalTraits>;
+		using self_type = ptr_sequence_container<Type, Traits, SignalTraits>;
 	
 	protected:
 		using traits_type    = Traits;
@@ -153,8 +164,8 @@ namespace viewed
 
 	public:
 		// container interface
-		using value_type      =       Type;
-		using const_reference = const Type &;
+		using value_type      = const Type *;
+		using const_reference = const Type *;
 		using const_pointer   = const Type *;
 
 		using pointer   = const_pointer;
@@ -164,27 +175,27 @@ namespace viewed
 		using difference_type = typename main_store_type::difference_type;
 
 	protected:
-		template <class reference_type, class iterator_base>
-		class iterator_adaptor : public boost::iterator_adaptor<iterator_adaptor<reference_type, iterator_base>, iterator_base, value_type, boost::use_default, reference_type>
+		template <class value_type, class iterator_base>
+		class iterator_adaptor : public boost::iterator_adaptor<iterator_adaptor<value_type, iterator_base>, iterator_base, value_type, boost::use_default, value_type>
 		{
 			friend boost::iterator_core_access;
-			using base_type = boost::iterator_adaptor<iterator_adaptor<reference_type, iterator_base>, iterator_base, value_type, boost::use_default, reference_type>;
+			using base_type = boost::iterator_adaptor<iterator_adaptor<value_type, iterator_base>, iterator_base, value_type, boost::use_default, value_type>;
 
 		private:
-			reference_type dereference() const noexcept { return self_type::value_reference(*this->base_reference()); }
+			decltype(auto) dereference() const noexcept { return self_type::value_pointer(*this->base_reference()); }
 
 		public:
 			using base_type::base_type;
 		};
 
 	public:
-		using const_iterator         = iterator_adaptor<const_reference, typename main_store_type::const_iterator>;
-		using const_reverse_iterator = iterator_adaptor<const_reference, typename main_store_type::const_reverse_iterator>;
+		using const_iterator         = iterator_adaptor<const_pointer, typename main_store_type::const_iterator>;
+		using const_reverse_iterator = iterator_adaptor<const_pointer, typename main_store_type::const_reverse_iterator>;
 
 		using iterator         = const_iterator;
 		using reverse_iterator = const_reverse_iterator;
-		//using iterator         = iterator_adaptor<reference, typename main_store_type::iterator>;
-		//using reverse_iterator = iterator_adaptor<reference, typename main_store_type::reverse_iterator>;
+		//using iterator         = iterator_adaptor<pointer, typename main_store_type::iterator>;
+		//using reverse_iterator = iterator_adaptor<pointer, typename main_store_type::reverse_iterator>;
 
 	public:
 		/// forward signal types
@@ -198,8 +209,8 @@ namespace viewed
 
 	public:
 		using view_pointer_type = const_pointer;
-		static view_pointer_type get_view_pointer(const_reference ref)     noexcept { return &ref; }
-		static const_reference   get_view_reference(view_pointer_type ptr) noexcept { return *ptr}
+		static decltype(auto) get_view_pointer(const_pointer ptr)       noexcept { return ptr; }
+		static decltype(auto) get_view_reference(view_pointer_type ptr) noexcept { return ptr; }
 
 	protected:
 		main_store_type m_store;
@@ -262,33 +273,31 @@ namespace viewed
 		/// records which are already in container will be replaced with new ones
 		template <class SinglePassIterator>
 		void append(SinglePassIterator first, SinglePassIterator last);
-		void append(std::initializer_list<value_type> ilist) { append(std::begin(ilist), std::end(ilist)); }
 
 		/// clear container and assigns elements from [first, last)
 		template <class SinglePassIterator>
 		void assign(SinglePassIterator first, SinglePassIterator last);
-		void assign(std::initializer_list<value_type> ilist) { assign(std::begin(ilist), std::end(ilist)); }
 
-		template <class Arg> void append(Arg && arg) { append(&arg, &arg + 1); }
-		template <class Arg> void push_back(Arg && arg) { return append(std::forward<Arg>(arg)); }
+		template <class Arg> void append(Arg && arg)    { append(&arg, &arg + 1); }
+		template <class Arg> void push_back(Arg && arg) { append(std::forward<Arg>(arg)); }
 
 	public:
-		sequence_container(traits_type traits = {})
+		ptr_sequence_container(traits_type traits = {})
 			: traits_type(std::move(traits)), m_store(traits_type::make_store())
 		{};
 
-		sequence_container(const sequence_container &) = delete;
-		sequence_container & operator =(const sequence_container &) = delete;
+		ptr_sequence_container(const ptr_sequence_container &) = delete;
+		ptr_sequence_container & operator =(const ptr_sequence_container &) = delete;
 
-		sequence_container(sequence_container && op) = default;
-		sequence_container & operator =(sequence_container && op) = default;
+		ptr_sequence_container(ptr_sequence_container && op) = default;
+		ptr_sequence_container & operator =(ptr_sequence_container && op) = default;
 	};
 
 
 
 	template <class Type, class Traits, class SignalTraits>
 	template <class SinglePassIterator>
-	void sequence_container<Type, Traits, SignalTraits>::append_newrecs
+	void ptr_sequence_container<Type, Traits, SignalTraits>::append_newrecs
 		(SinglePassIterator first, SinglePassIterator last)
 	{
 		signal_store_type erased, updated, inserted;
@@ -305,7 +314,7 @@ namespace viewed
 
 	template <class Type, class Traits, class SignalTraits>
 	template <class SinglePassIterator>
-	void sequence_container<Type, Traits, SignalTraits>::assign_newrecs
+	void ptr_sequence_container<Type, Traits, SignalTraits>::assign_newrecs
 		(SinglePassIterator first, SinglePassIterator last)
 	{
 		signal_store_type erased, updated, inserted;
@@ -329,7 +338,7 @@ namespace viewed
 	}
 
 	template <class Type, class Traits, class SignalTraits>
-	void sequence_container<Type, Traits, SignalTraits>::erase_from_views(const_iterator first, const_iterator last)
+	void ptr_sequence_container<Type, Traits, SignalTraits>::erase_from_views(const_iterator first, const_iterator last)
 	{
 		signal_store_type todel;
 		std::transform(first, last, std::back_inserter(todel), get_pointer);
@@ -340,14 +349,14 @@ namespace viewed
 	}
 
 	template <class Type, class Traits, class SignalTraits>
-	void sequence_container<Type, Traits, SignalTraits>::clear()
+	void ptr_sequence_container<Type, Traits, SignalTraits>::clear()
 	{
 		m_clear_signal();
 		m_store.clear();
 	}
 
 	template <class Type, class Traits, class SignalTraits>
-	void sequence_container<Type, Traits, SignalTraits>::notify_views
+	void ptr_sequence_container<Type, Traits, SignalTraits>::notify_views
 		(signal_store_type & erased, signal_store_type & updated, signal_store_type & inserted)
 	{
 		auto urr = signal_traits::make_range(updated.data(), updated.data() + updated.size());
@@ -358,7 +367,7 @@ namespace viewed
 
 
 	template <class Type, class Traits, class SignalTraits>
-	auto sequence_container<Type, Traits, SignalTraits>::erase(const_iterator first, const_iterator last) -> const_iterator
+	auto ptr_sequence_container<Type, Traits, SignalTraits>::erase(const_iterator first, const_iterator last) -> const_iterator
 	{
 		erase_from_views(first, last);
 		return m_store.erase(first, last);
@@ -366,7 +375,7 @@ namespace viewed
 
 	template <class Type, class Traits, class SignalTraits>
 	template <class CompatibleKey>
-	auto sequence_container<Type, Traits, SignalTraits>::erase(const CompatibleKey & key) -> size_type
+	auto ptr_sequence_container<Type, Traits, SignalTraits>::erase(const CompatibleKey & key) -> size_type
 	{
 		const_iterator first, last;
 		std::tie(first, last) = m_store.equal_range(key);
@@ -377,14 +386,14 @@ namespace viewed
 
 	template <class Type, class Traits, class SignalTraits>
 	template <class SinglePassIterator>
-	inline void sequence_container<Type, Traits, SignalTraits>::append(SinglePassIterator first, SinglePassIterator last)
+	inline void ptr_sequence_container<Type, Traits, SignalTraits>::append(SinglePassIterator first, SinglePassIterator last)
 	{
 		return append_newrecs(first, last);
 	}
 
 	template <class Type, class Traits, class SignalTraits>
 	template <class SinglePassIterator>
-	inline void sequence_container<Type, Traits, SignalTraits>::assign(SinglePassIterator first, SinglePassIterator last)
+	inline void ptr_sequence_container<Type, Traits, SignalTraits>::assign(SinglePassIterator first, SinglePassIterator last)
 	{
 		return assign_newrecs(first, last);
 	}

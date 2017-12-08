@@ -33,11 +33,10 @@ namespace viewed
 	
 	public:
 		using typename base_type::container_type;
+		using typename base_type::view_pointer_type;
 		using typename base_type::sort_pred_type;
 		using typename base_type::filter_pred_type;
 
-		using typename base_type::value_type;
-		using typename base_type::const_pointer;
 		using typename base_type::const_iterator;
 		using typename base_type::iterator;
 
@@ -52,10 +51,9 @@ namespace viewed
 		using base_type::m_owner;
 		using base_type::m_store;
 		using base_type::get_model;
-		using base_type::make_pointer;
 
 	protected:
-		typedef boost::container::flat_set<const value_type *> selection_set_type;
+		typedef boost::container::flat_set<view_pointer_type> selection_set_type;
 		selection_set_type m_selection_set;
 
 		bool m_partition_by_selection = false;
@@ -131,7 +129,7 @@ namespace viewed
 		                  int_vector::iterator ifirst, int_vector::iterator ilast) override;
 
 		/// get pair of iterators that hints where to search element
-		virtual search_hint_type search_hint(const_pointer ptr) const override;
+		virtual search_hint_type search_hint(view_pointer_type ptr) const override;
 
 	protected:
 		selectable_sfview_qtbase(container_type * owner,
@@ -284,15 +282,14 @@ namespace viewed
 	void selectable_sfview_qtbase<Container, SortPred, FilterPred>::
 		partition(store_iterator first, store_iterator last)
 	{
-		typedef const value_type * pointer;
 		if (m_partition_by_selection_asc)
 		{
-			auto pred = [this](pointer ptr) { return m_selection_set.count(ptr) != 0; };
+			auto pred = [this](view_pointer_type ptr) { return m_selection_set.count(ptr) != 0; };
 			std::stable_partition(first, last, pred);
 		}
 		else
 		{
-			auto pred = [this](pointer ptr) { return m_selection_set.count(ptr) == 0; };
+			auto pred = [this](view_pointer_type ptr) { return m_selection_set.count(ptr) == 0; };
 			std::stable_partition(first, last, pred);
 		}
 	}
@@ -307,13 +304,13 @@ namespace viewed
 
 		if (m_partition_by_selection_asc)
 		{
-			auto pred = [this](const value_type * ptr) { return m_selection_set.count(ptr) != 0; };
-			std::stable_partition(zfirst, zlast, make_get_functor<0>(pred));
+			auto pred = [this](view_pointer_type ptr) { return m_selection_set.count(ptr) != 0; };
+			std::stable_partition(zfirst, zlast, viewed::make_get_functor<0>(pred));
 		}
 		else
 		{
-			auto pred = [this](const value_type * ptr) { return m_selection_set.count(ptr) == 0; };
-			std::stable_partition(zfirst, zlast, make_get_functor<0>(pred));
+			auto pred = [this](view_pointer_type ptr) { return m_selection_set.count(ptr) == 0; };
+			std::stable_partition(zfirst, zlast, viewed::make_get_functor<0>(pred));
 		}
 	}
 
@@ -381,7 +378,7 @@ namespace viewed
 	}
 
 	template <class Container, class SortPred, class FilterPred>
-	auto selectable_sfview_qtbase<Container, SortPred, FilterPred>::search_hint(const_pointer ptr) const -> search_hint_type
+	auto selectable_sfview_qtbase<Container, SortPred, FilterPred>::search_hint(view_pointer_type ptr) const -> search_hint_type
 	{
 		if (!m_partition_by_selection)
 			return base_type::search_hint(ptr);
@@ -393,12 +390,12 @@ namespace viewed
 		decltype(begIt) pp;
 		if (asc)
 		{
-			auto pred = [this](const_pointer ptr) { return m_selection_set.count(ptr) != 0; };
+			auto pred = [this](view_pointer_type ptr) { return m_selection_set.count(ptr) != 0; };
 			pp = std::partition_point(begIt, endIt, pred);
 		}
 		else
 		{
-			auto pred = [this](const_pointer ptr) { return m_selection_set.count(ptr) == 0; };
+			auto pred = [this](view_pointer_type ptr) { return m_selection_set.count(ptr) == 0; };
 			pp = std::partition_point(begIt, endIt, pred);
 		}
 

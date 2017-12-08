@@ -135,6 +135,12 @@ namespace viewed
 		typedef typename signal_traits::erase_signal_type   erase_signal_type;
 		typedef typename signal_traits::clear_signal_type   clear_signal_type;
 
+	public:
+		// view related pointer helpers
+		using view_pointer_type = const_pointer;
+		static view_pointer_type get_view_pointer(const_reference ref)     noexcept { return &ref; }
+		static const_reference   get_view_reference(view_pointer_type ptr) noexcept { return *ptr; }
+
 	protected:
 		main_store_type m_store;
 
