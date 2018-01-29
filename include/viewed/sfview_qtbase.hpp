@@ -23,17 +23,22 @@ namespace viewed
 	/// see also view_qtbase description for more information
 	/// 
 	/// sfview_qtbase is sorted and filtered based on provided SortPred, FilterPred.
-	/// Those can be: simple predicate or boost::variant of different predicates.
-	///
+	/// Those can be: simple predicate or std::variant of different predicates.
+	/// 
+	/// predicates can, optionally, be converted to bool: static_cast<bool>(pred) == true ->
+	/// predicate is active, if conversion is not provided - predicate is always active.
+	///   sort_pred - predicate can sort items, otherwise it can not and whole view will be unsorted.
+	///   filter_pred - predicate can filter items, otherwise it is assumed all items are always passes filter(empty filter)
+	/// 
 	/// In derived class you can provide methods like sort_by/filter_by,
 	/// which will configure those predicates
 	/// on construction this class initializes internal store
 	/// 
 	/// @Param Container - class to which this view will connect and listen updates, see view_qtbase for more description
-	/// @Param SortPred - sort predicate or boost::variant of predicates,
-	///                   example: std::less<Type>, boost::varaint<std::less<Type>, std::greater<Type>
-	/// @Param FilterPred - filter predicate or boost::variant of predicates,
-	///                     NOTE: boost::variant is not supported yet for filter predicate
+	/// @Param SortPred - sort predicate or std::variant of predicates,
+	///                   example: std::less<Type>, std::varaint<std::less<Type>, std::greater<Type>>
+	/// @Param FilterPred - filter predicate or std::variant of predicates,
+	///                     NOTE: std::variant is not supported yet for filter predicate
 	template <
 		class Container,
 		class SortPred,
@@ -88,6 +93,15 @@ namespace viewed
 	protected:
 		static void mark_pointer(view_pointer_type & ptr) { reinterpret_cast<std::uintptr_t &>(ptr) |= 1; }
 		static bool is_marked(view_pointer_type ptr) { return reinterpret_cast<std::uintptr_t>(ptr) & 1; }
+
+		template <class Pred> static std::enable_if_t<    ext::static_castable_v<Pred, bool>, bool> active_visitor(const Pred & pred) { return static_cast<bool>(pred); }
+		template <class Pred> static std::enable_if_t<not ext::static_castable_v<Pred, bool>, bool> active_visitor(const Pred & pred) { return true; }
+
+		template <class Pred> static bool active(Pred && pred)
+		{
+			auto vis = [](const auto & pred) { return active_visitor(pred); };
+			return varalgo::variant_traits<std::decay_t<Pred>>::visit(vis, std::forward<Pred>(pred));
+		}
 
 	public:
 		/// reinitializes view from owner
@@ -179,7 +193,7 @@ namespace viewed
 		model->beginResetModel();
 
 		auto range = *m_owner | boost::adaptors::transformed(get_view_pointer);
-		if (!m_filter_pred)
+		if (not active(m_filter_pred))
 			m_store.assign(range.begin(), range.end());
 		else
 		{
@@ -199,16 +213,21 @@ namespace viewed
 		const signal_range_type & sorted_updated,
 		const signal_range_type & inserted)
 	{
-		boost::push_back(m_store, sorted_updated);
-		boost::push_back(m_store, inserted);
+		if (not active(m_sort_pred) and not active(m_filter_pred))
+			base_type::update_data(sorted_erased, sorted_updated, inserted);
+		else
+		{
+			boost::push_back(m_store, sorted_updated);
+			boost::push_back(m_store, inserted);
 
-		auto first = m_store.begin();
-		auto last = m_store.end();
-		auto first_inserted = last - inserted.size();
-		auto first_updated = first_inserted - sorted_updated.size();
+			auto first = m_store.begin();
+			auto last = m_store.end();
+			auto first_inserted = last - inserted.size();
+			auto first_updated = first_inserted - sorted_updated.size();
 
-		update_store(first, first_updated, first_inserted, last,
-		             sorted_erased.begin(), sorted_erased.end());
+			update_store(first, first_updated, first_inserted, last,
+			             sorted_erased.begin(), sorted_erased.end());
+		}
 	}
 
 	template <class Container, class SortPred, class FilterPred>
@@ -249,6 +268,8 @@ namespace viewed
 		// left updated and inserted than merged to m_store, also merge operation permutates index_array,
 		// which is used to update qt persistent indexes
 
+		// this case(both not active) is handled by update_data(forwarded to view_qtbase implementation)
+		assert(active(m_sort_pred) or active(m_filter_pred));
 
 		// currently just assume first always is beginning of m_store
 		assert(first == m_store.begin());
@@ -282,8 +303,7 @@ namespace viewed
 			middle = viewed::remove_indexes(first, middle, removed_first, removed_last);
 			middle_sz = middle - first;
 
-			// only inserts
-			if (m_filter_pred)
+			if (active(m_filter_pred))
 			{
 				last = std::remove_if(first_inserted, last, not_fpred);
 				m_store.resize(last - first);
@@ -307,7 +327,7 @@ namespace viewed
 
 					mark_pointer(*found);
 					int row = static_cast<int>(it - first);
-					bool passes = !m_filter_pred || m_filter_pred(*ptr);
+					bool passes = not active(m_filter_pred) || m_filter_pred(*ptr);
 
 					if (passes)   *--changed_first = row;
 					else          *removed_last++ = row;
@@ -321,7 +341,7 @@ namespace viewed
 			last = std::copy_if(first_updated, last_updated, middle,
 			                    [fpred](auto ptr) { return not is_marked(ptr) and fpred(ptr); });
 			
-			if (m_filter_pred)
+			if (active(m_filter_pred))
 				last = std::copy_if(first_inserted, last_inserted, last, fpred);
 			else
 				last = std::copy(first_inserted, last_inserted, last);
@@ -363,6 +383,8 @@ namespace viewed
 	void sfview_qtbase<Container, SortPred, FilterPred>::
 		merge_newdata(store_iterator first, store_iterator middle, store_iterator last, bool resort_old /*= true*/)
 	{
+		if (not active(m_sort_pred)) return;
+
 		auto comp = viewed::make_indirect_fun(m_sort_pred);
 
 		if (resort_old) varalgo::stable_sort(first, middle, comp);
@@ -376,6 +398,8 @@ namespace viewed
 		              int_vector::iterator ifirst, int_vector::iterator imiddle, int_vector::iterator ilast,
 		              bool resort_old /* = true */)
 	{
+		if (not active(m_sort_pred)) return;
+
 		assert(last - first == ilast - ifirst);
 		assert(middle - first == imiddle - ifirst);
 
@@ -393,6 +417,8 @@ namespace viewed
 	template <class Container, class SortPred, class FilterPred>
 	void sfview_qtbase<Container, SortPred, FilterPred>::sort(store_iterator first, store_iterator last)
 	{
+		if (not active(m_sort_pred)) return;
+
 		auto comp = viewed::make_indirect_fun(m_sort_pred);
 		varalgo::stable_sort(first, last, comp);
 	}
@@ -402,6 +428,8 @@ namespace viewed
 		sort(store_iterator first, store_iterator last,
 		     int_vector::iterator ifirst, int_vector::iterator ilast)
 	{
+		if (not active(m_sort_pred)) return;
+
 		auto comp = viewed::make_get_functor<0>(viewed::make_indirect_fun(m_sort_pred));
 
 		auto zfirst = ext::make_zip_iterator(first, ifirst);
@@ -412,6 +440,8 @@ namespace viewed
 	template <class Container, class SortPred, class FilterPred>
 	void sfview_qtbase<Container, SortPred, FilterPred>::sort_and_notify(store_iterator first, store_iterator last)
 	{
+		if (not active(m_sort_pred)) return;
+
 		auto * model = get_model();
 		Q_EMIT model->layoutAboutToBeChanged(model_type::empty_model_list, model->VerticalSortHint);
 
@@ -432,6 +462,8 @@ namespace viewed
 	template <class Container, class SortPred, class FilterPred>
 	auto sfview_qtbase<Container, SortPred, FilterPred>::search_hint(view_pointer_type ptr) const -> search_hint_type
 	{
+		if (not active(m_sort_pred)) return {m_store.begin(), m_store.end()};
+
 		auto comp = viewed::make_indirect_fun(m_sort_pred);
 		return varalgo::equal_range(m_store, ptr, comp);
 	}
@@ -452,7 +484,7 @@ namespace viewed
 	template <class Container, class SortPred, class FilterPred>
 	void sfview_qtbase<Container, SortPred, FilterPred>::refilter_incremental()
 	{
-		if (!m_filter_pred) return;
+		if (not active(m_filter_pred)) return;
 		
 		auto test = [this](view_pointer_type ptr) { return !m_filter_pred(*ptr); };
 
@@ -480,15 +512,20 @@ namespace viewed
 	template <class Container, class SortPred, class FilterPred>
 	void sfview_qtbase<Container, SortPred, FilterPred>::refilter_full()
 	{
-		auto sz = m_store.size();
-		boost::push_back(m_store, *m_owner | boost::adaptors::transformed(get_view_pointer));
+		if (not active(m_sort_pred) and not active(m_filter_pred))
+			base_type::reinit_view();
+		else
+		{
+			auto sz = m_store.size();
+			boost::push_back(m_store, *m_owner | boost::adaptors::transformed(get_view_pointer));
 
-		auto first = m_store.begin();
-		auto last = m_store.end();
-		auto first_updated = first + sz;
-		std::sort(first_updated, last);
+			auto first = m_store.begin();
+			auto last = m_store.end();
+			auto first_updated = first + sz;
+			std::sort(first_updated, last);
 
-		signal_const_iterator noerased {};
-		update_store(first, first_updated, last, last, noerased, noerased);
+			signal_const_iterator noerased {};
+			update_store(first, first_updated, last, last, noerased, noerased);
+		}
 	}
 }

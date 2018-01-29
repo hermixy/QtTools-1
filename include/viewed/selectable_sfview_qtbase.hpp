@@ -8,8 +8,13 @@ namespace viewed
 	/// see also view_base description for more information
 	/// 
 	/// selectable_sfview_qtbase is sorted and filtered based on provided SortPred, FilterPred.
-	/// Those can be: simple predicate or boost::variant of different predicates.
+	/// Those can be: simple predicate or std::variant of different predicates.
 	///
+	/// predicates can, optionally, be converted to bool: static_cast<bool>(pred) == true ->
+	/// predicate is active, if conversion is not provided - predicate is always active.
+	///   sort_pred - predicate can sort items, otherwise it can not and whole view will be unsorted.
+	///   filter_pred - predicate can filter items, otherwise it is assumed all items are always passes filter(empty filter)
+	/// 
 	/// In derived class you can provide methods like sort_by/filter_by,
 	/// which will configure those predicates
 	/// 
@@ -17,10 +22,10 @@ namespace viewed
 	/// and then partition on those elements
 	/// 
 	/// @Param Container - class to which this view will connect and listen updates, see view_base for more description
-	/// @Param SortPred - sort predicate or boost::variant of predicates,
-	///                   example: std::less<Type>, boost::varaint<std::less<Type>, std::greater<Type>
-	/// @Param FilterPred - filter predicate or boost::variant of predicates,
-	///                     NOTE: boost::variant is'n supported yet for filter predicate
+	/// @Param SortPred - sort predicate or std::variant of predicates,
+	///                   example: std::less<Type>, std::varaint<std::less<Type>, std::greater<Type>
+	/// @Param FilterPred - filter predicate or std::variant of predicates,
+	///                     NOTE: std::variant is'n supported yet for filter predicate
 	template <
 		class Container,
 		class SortPred,

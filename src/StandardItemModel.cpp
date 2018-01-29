@@ -27,7 +27,7 @@ namespace QtTools
 		struct RowIterator :
 			public boost::iterator_facade<
 				RowIterator,
-				void,
+				RowItemReference,
 				std::random_access_iterator_tag,
 				RowItemReference
 			>
