@@ -20,6 +20,22 @@
 
 namespace viewed
 {
+	struct null_sorter
+	{
+		template <class Type>
+		bool operator()(const Type & v1, const Type & v2) const { return true; }
+		
+		explicit operator bool() const { return false; }
+	};
+
+	struct null_filter
+	{
+		template <class Type>
+		bool operator()(const Type & v) { return true; }
+		
+		explicit operator bool() const { return false; }
+	};
+
 	/// see also view_qtbase description for more information
 	/// 
 	/// sfview_qtbase is sorted and filtered based on provided SortPred, FilterPred.

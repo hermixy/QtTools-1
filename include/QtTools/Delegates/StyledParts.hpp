@@ -94,7 +94,22 @@ namespace Delegates
 	inline int TextMargin(const QStyleOptionViewItem & opt)
 	{
 		auto * style = AccquireStyle(opt);
-		return TextMargin(opt);
+		return TextMargin(style);
+	}
+
+	/// возвращает text margins. Qt вычисляет область текста с отступами справа и слева.
+	/// Note: по факту учитывается только PM_FocusFrameHMargin, но не PM_FocusFrameVMargin
+	/// 
+	/// смотри: qcommonstyle.cpp:861  qt 5.3 (viewItemDrawText)
+	///         viewItemSize.cpp:846  qt 5.3 (viewItemDrawText)
+	inline QMargins TextMargins(const QStyleOptionViewItem & opt)
+	{
+		const int hmargin = TextMargin(opt);
+		const int vmargin = 0;
+		return QMargins {
+			hmargin, vmargin,
+			hmargin, vmargin,
+		};
 	}
 
 	/// убирает text margin из области полученной с помощью QtTools::Delegates::TextSubrect
