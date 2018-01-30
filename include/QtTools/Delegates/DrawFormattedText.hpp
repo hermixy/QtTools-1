@@ -42,26 +42,31 @@ namespace Delegates
 		/// 
 		/// возвращает индекс усеченной строки (далее elidedIndex)
 		/// если по факту усечение не было - возвращает lineCount
-		///
-		/// после выполнения данной функции для layout.boundingRectangle() (далее LBR) возможны 3 случая.
-		///  1. Усечение не было обнаружено и прямоугольник содержит область корректной разметки
-		///  2. Было обнаружено усечение по длине линии - прямоугольник содержит область вместе усеченной строкой
-		///  3. Было обнаружено усечение по высоте области - при этом прямоугольник
-		///     содержит область вместе с усеченной линией, и дополнительно может содержать область следующей строки, после усеченной
-		///     
-		///  в случае 1 нужно просто нарисовать все строки в LBR.
-		///  в случае 2 нужно нарисовать все строки до elidedIndex в области LBR, и потом отдельно elided строку в области elided строки
-		///  в случае 3 нужно нарисовать все строки до elidedIndex в области LBR, из которой следует исключить дополнительные строки после elidedIndex
+		/// assert(lineCount - elideIndex <= 2)
+		/// 
+		/// после выполнения данной функции для layout.boundingRectangle() (далее LBR) возможны 3 случая:
+		/// switch(auto diff = layout.lineCount() - elidedIndex):
+		///  0. Усечение не было обнаружено и прямоугольник содержит область корректной разметки
+		///  1. Было обнаружено усечение по длине линии - прямоугольник содержит область вместе усеченной строкой
+		///  2. Было обнаружено усечение по высоте области - при этом прямоугольник
+		///     содержит область вместе с усеченной линией, и дополнительно содержит область следующей строки, после усеченной
+		///  
+		///  в случае 0 нужно просто нарисовать все строки в LBR.
+		///  в случае 1 нужно нарисовать все строки до elidedIndex в области LBR, и потом отдельно elided строку в области elided строки
+		///  в случае 2 нужно нарисовать все строки до elidedIndex в области LBR, из которой следует исключить дополнительные строки после elidedIndex
 		///  
 		///  Смотри также вспомогательные функции ниже
-		int DoLayout(QTextLayout & layout, const QRect & textRect);
+		int DoLayout(QTextLayout & layout, const QRectF & textRect);
 
-		/// вычисляет boundingRectangle в layout после DoLayout(layout, ...),
+		/// вычисляет bounding rectangle в layout после DoLayout(layout, ...),
 		/// учитывая результат выполнения последнего(смотри описание DoLayout)
 		QRectF BoundingRect(QTextLayout & layout, int elideIndex);
+		/// вычисляет natural bounding rectangle в layout после DoLayout(layout, ...),
+		/// учитывая результат выполнения последнего(смотри описание DoLayout)
+		QRectF NaturalBoundingRect(QTextLayout & layout, int elideIndex);
 
 		/// вычисляет прямоугольник для elide линии(смотри описание DoLayout)
-		QRect ElideLineRect(QTextLayout & layout, int elideIndex, const QRect & boundingRectangle);
+		QRectF ElideLineRect(QTextLayout & layout, int elideIndex, const QRectF & boundingRectangle);
 
 		/// выравнивает прямоугольник к заданным размерам учитывая alignment, direction элемента
 		inline QRect AlignedRect(QStyle * style, const QStyleOptionViewItem & opt, const QSize & size, const QRect & rect)
@@ -75,7 +80,7 @@ namespace Delegates
 
 		/// рисует линии из layout до elideIndex в drawRect(смотри описание DoLayout)
 		/// drawRect должен учитывать alignment, например, с помощью
-		void DrawLayout(QPainter * painter, const QRect & drawRect, const QTextLayout & layout, int elideIndex);
+		void DrawLayout(QPainter * painter, const QRectF & drawRect, const QTextLayout & layout, int elideIndex);
 	}
 
 	/// Подготавливает painter для дальнейшего рисования

@@ -55,7 +55,7 @@ namespace Delegates
 	bool CheckBoxDelegate::editorEvent(QEvent * event, QAbstractItemModel * model,
 	                                   const QStyleOptionViewItem & option, const QModelIndex & index)
 	{
-		// код взят из qstyleditemdelegate.cpp:642 версии qt 5.3 и немного переработан, в основном ситлистически
+		// код взят из qstyleditemdelegate.cpp:642 версии qt 5.3 и немного переработан, в основном стилистически
 
 		// make sure that the item is checkable
 		Qt::ItemFlags flags = model->flags(index);

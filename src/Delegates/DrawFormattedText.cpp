@@ -1,6 +1,8 @@
-#include <QtTools/Delegates/DrawFormattedText.hpp>
-#include <QtGui/QPainter>
+#include <cassert>
 #include <algorithm> // for replace_if
+
+#include <QtGui/QPainter>
+#include <QtTools/Delegates/DrawFormattedText.hpp>
 
 namespace QtTools {
 namespace Delegates
@@ -33,10 +35,10 @@ namespace Delegates
 			return fm.elidedText(lineToElide, mode, width);
 		}
 	
-		int DoLayout(QTextLayout & layout, const QRect & textRect)
+		int DoLayout(QTextLayout & layout, const QRectF & textRect)
 		{
-			int width = textRect.width();
-			int height = textRect.height();
+			qreal width = textRect.width();
+			qreal height = textRect.height();
 			qreal cury = 0;
 			int elideIndex = 0;
 
@@ -78,6 +80,7 @@ namespace Delegates
 				case 0: // не было усечения
 				case 1: // усечение по последней строке
 					return layout.boundingRect();
+
 				default: // по факту усечение по предпоследней строке
 				{
 					auto br = layout.boundingRect();
@@ -97,13 +100,30 @@ namespace Delegates
 			}
 		}
 
-		QRect ElideLineRect(QTextLayout & layout, int elideIndex, const QRect & boundingRectangle)
+		QRectF NaturalBoundingRect(QTextLayout & layout, int elideIndex)
+		{
+			int lc = layout.lineCount();
+			assert(elideIndex <= lc);
+
+			QRectF rect;
+			lc = std::min(elideIndex + 1, lc);
+
+			for (int i = 0; i < lc; ++i)
+			{
+				QTextLine line = layout.lineAt(i);
+				rect |= line.naturalTextRect();
+			}
+
+			return rect;
+		}
+
+		QRectF ElideLineRect(QTextLayout & layout, int elideIndex, const QRectF & boundingRectangle)
 		{
 			auto line = layout.lineAt(elideIndex);
 			return boundingRectangle.adjusted(0, boundingRectangle.height() - line.height(), 0, 0);
 		}
 
-		void DrawLayout(QPainter * painter, const QRect & drawRect, const QTextLayout & layout, int elideIndex)
+		void DrawLayout(QPainter * painter, const QRectF & drawRect, const QTextLayout & layout, int elideIndex)
 		{
 			auto drawPos = drawRect.topLeft();
 			for (int i = 0; i < elideIndex; ++i)
