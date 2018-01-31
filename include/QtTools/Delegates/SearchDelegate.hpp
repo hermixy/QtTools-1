@@ -17,7 +17,12 @@ namespace Delegates
 	/// слово ищется в text, совпадения раскрашивается в заданный формат
 	void FormatSearchText(const QString & text, const QString & filterWord,
 	                      const QTextCharFormat & format, QVector<QTextLayout::FormatRange> & formats);
-	
+
+	/// "Раскрашивает" text в соответствии с filterWord, return форма.
+	/// слово ищется в text, совпадения раскрашивается в заданный формат
+	auto FormatSearchText(const QString & text, const QString & filterWord, const QTextCharFormat & format)
+		-> QVector<QTextLayout::FormatRange>;
+
 	/// Делегат, отображающий текст подобно QStyledItemDelegate.
 	/// дополнительно ищет заданный текст в отображаемой строке, и подсвечивает найденные участки
 	class SearchDelegate : public StyledDelegate

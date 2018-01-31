@@ -23,6 +23,15 @@ namespace Delegates
 		}
 	}
 
+	auto FormatSearchText(const QString & text, const QString & filterWord, const QTextCharFormat & format)
+		-> QVector<QTextLayout::FormatRange>
+	{
+		QVector<QTextLayout::FormatRange> formats;
+		FormatSearchText(text, filterWord, format, formats);
+		return formats;
+	}
+
+
 	static void ColorifyElidePoint(QString & elidedText, QVector<QTextLayout::FormatRange> & formats)
 	{
 		const auto elideSymbol = QChar(0x2026);
