@@ -61,8 +61,8 @@ namespace viewed
 		static auto make_internal(const Type * ptr)        { return internal_value_type(ptr); }
 		static auto make_internal(internal_value_type ptr) { return std::move(val); }
 
-		static decltype(auto) value_reference(const internal_value_type & val) { return *val; }
-		static decltype(auto) value_reference(      internal_value_type & val) { return *val; }
+		static decltype(auto) value_reference(const internal_value_type & val) { return val.get(); }
+		static decltype(auto) value_reference(      internal_value_type & val) { return val.get(); }
 
 		static auto value_pointer(const internal_value_type & val) { return val.get(); }
 		static auto value_pointer(      internal_value_type & val) { return val.get(); }
@@ -182,7 +182,7 @@ namespace viewed
 			using base_type = boost::iterator_adaptor<iterator_adaptor<value_type, iterator_base>, iterator_base, value_type, boost::use_default, value_type>;
 
 		private:
-			decltype(auto) dereference() const noexcept { return self_type::value_pointer(*this->base_reference()); }
+			decltype(auto) dereference() const noexcept { return self_type::value_reference(*this->base_reference()); }
 
 		public:
 			using base_type::base_type;
@@ -236,6 +236,18 @@ namespace viewed
 
 		size_type size() const noexcept { return m_store.size(); }
 		bool empty()     const noexcept { return m_store.empty(); }
+
+		      reference front()       noexcept { return self_type::value_reference(m_store.front()); }
+		const_reference front() const noexcept { return self_type::value_reference(m_store.front()); }
+
+		      reference back()       noexcept { return self_type::value_reference(m_store.back()); }
+		const_reference back() const noexcept { return self_type::value_reference(m_store.back()); }
+
+		      reference at(size_type idx)       { return self_type::value_reference(m_store.at(idx)); }
+		const_reference at(size_type idx) const { return self_type::value_reference(m_store.at(idx)); }
+
+		      reference operator [](size_type idx)       noexcept { return self_type::value_reference(m_store.operator[](idx)); }
+		const_reference operator [](size_type idx) const noexcept { return self_type::value_reference(m_store.operator[](idx)); }
 
 		/// signals
 		template <class... Args> connection on_erase(Args && ... args)  { return m_erase_signal.connect(std::forward<Args>(args)...); }

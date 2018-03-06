@@ -136,12 +136,12 @@ namespace viewed
 		const_reverse_iterator crend() const noexcept   { return const_reverse_iterator(m_store.crend()); }
 
 		const_reference at(size_type idx) const { return get_view_reference(m_store.at(idx)); }
-		const_reference operator [](size_type idx) const { return get_view_reference(m_store.operator[](idx)); }
+		const_reference operator [](size_type idx) const noexcept { return get_view_reference(m_store.operator[](idx)); }
 		const_reference front() const { return get_view_reference(m_store.front()); }
-		const_reference back() const  { return get_view_reference(m_store.back()); }
+		const_reference back()  const { return get_view_reference(m_store.back()); }
 
 		size_type size() const noexcept { return m_store.size(); }
-		bool empty() const noexcept { return m_store.empty(); }
+		bool empty()     const noexcept { return m_store.empty(); }
 
 	public:
 		/// returns pointer to owning container

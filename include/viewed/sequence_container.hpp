@@ -226,6 +226,18 @@ namespace viewed
 		size_type size() const noexcept { return m_store.size(); }
 		bool empty()     const noexcept { return m_store.empty(); }
 
+		      reference front()       noexcept { return self_type::value_reference(m_store.front()); }
+		const_reference front() const noexcept { return self_type::value_reference(m_store.front()); }
+
+		      reference back()       noexcept { return self_type::value_reference(m_store.back()); }
+		const_reference back() const noexcept { return self_type::value_reference(m_store.back()); }
+
+		      reference at(size_type idx)       { return self_type::value_reference(m_store.at(idx)); }
+		const_reference at(size_type idx) const { return self_type::value_reference(m_store.at(idx)); }
+
+		      reference operator [](size_type idx)       noexcept { return self_type::value_reference(m_store.operator[](idx)); }
+		const_reference operator [](size_type idx) const noexcept { return self_type::value_reference(m_store.operator[](idx)); }
+
 		/// signals
 		template <class... Args> connection on_erase(Args && ... args)  { return m_erase_signal.connect(std::forward<Args>(args)...); }
 		template <class... Args> connection on_update(Args && ... args) { return m_update_signal.connect(std::forward<Args>(args)...); }
