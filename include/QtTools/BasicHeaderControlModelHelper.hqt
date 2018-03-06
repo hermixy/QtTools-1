@@ -2,41 +2,45 @@
 #include <QtCore/QVector>
 #include <QtCore/QMimeData>
 
-/// вспомогательный класс для BasicHeaderControlModel.
-/// Нужен для работы с Qt signals, а именно отложенные вызовы по средаствам QMetaType::invokeMethod(...).
-/// BasicHeaderControlModel - шаблонный класс, а потому не может иметь runtime Q_SLOTS.
-class BasicHeaderControlModelHelper : public QObject
+namespace QtTools
 {
-	Q_OBJECT;
+	/// вспомогательный класс для BasicHeaderControlModel.
+	/// Нужен для работы с Qt signals, а именно отложенные вызовы по средаствам QMetaType::invokeMethod(...).
+	/// BasicHeaderControlModel - шаблонный класс, а потому не может иметь runtime Q_SLOTS.
+	class BasicHeaderControlModelHelper : public QObject
+	{
+		Q_OBJECT;
 
-public:
-	class CodeListMime;
+	public:
+		class CodeListMime;
 
-public Q_SLOTS:
-	virtual void OnSectionVisibleChangedHelper(int logicalIndex) = 0;
-};
+		public Q_SLOTS:
+			virtual void OnSectionVisibleChangedHelper(int logicalIndex) = 0;
+	};
 
-class BasicHeaderControlModelHelper::CodeListMime : public QMimeData
-{
-	Q_OBJECT;
+	class BasicHeaderControlModelHelper::CodeListMime : public QMimeData
+	{
+		Q_OBJECT;
 
-public:
-	// "application/x-BasicHeaderControlModel-ColumnCodes"
-	static const QString MimeCodeFormat;
-	static const QStringList MimeFormats;
-	
-	// codes transfered via this drag&drop operation, void * to simplify adn not depend on template type
-	QVector<const void *> sections;
+	public:
+		// "application/x-BasicHeaderControlModel-ColumnCodes"
+		static const QString MimeCodeFormat;
+		static const QStringList MimeFormats;
 
-	// pointer to a model, which started this operation.
-	// To ensure internal only move
-	const void * model = nullptr;
+		// codes transfered via this drag&drop operation, void * to simplify adn not depend on template type
+		QVector<const void *> sections;
 
-public:
-	CodeListMime() = default;
-	CodeListMime(QVector<const void *> sections, const void * model)
-		: sections(std::move(sections)), model(model) {}
+		// pointer to a model, which started this operation.
+		// To ensure internal only move
+		const void * model = nullptr;
 
-	QStringList formats() const override;
-	bool hasFormat(const QString & mimetype) const override;
-};
+	public:
+		CodeListMime() = default;
+		CodeListMime(QVector<const void *> sections, const void * model)
+			: sections(std::move(sections)), model(model) {}
+
+		QStringList formats() const override;
+		bool hasFormat(const QString & mimetype) const override;
+	};
+
+}
