@@ -93,7 +93,7 @@ namespace Delegates
 	void DrawEditingFrame(QPainter * painter, const QRect & textRect, const QStyleOptionViewItem & opt);
 
 	/// Рисует текст text в textRect painter'а с помощью QTextLayout, учитывая параметры из opt.
-	/// Данный метод его не вызывает PreparePainter, RemoveTextMargin.
+	/// Данный метод не вызывает PreparePainter, RemoveTextMargin.
 	/// additionalFormats - дополнительные форматы для opt.text
 	void DrawFormattedText(QPainter * painter, const QString & text, const QRect & textRect, const QStyleOptionViewItem & opt,
 	                       const QVector<QTextLayout::FormatRange> & additionalFormats = {});

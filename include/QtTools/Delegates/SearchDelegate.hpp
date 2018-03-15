@@ -7,7 +7,7 @@ namespace QtTools {
 namespace Delegates
 {
 	/// Рисует текст text в textRect painter'а с помощью QTextLayout, учитывая параметры из opt.
-	/// Данный метод его не вызывает PreparePainter, RemoveTextMargin.
+	/// Данный метод не вызывает PreparePainter, RemoveTextMargin.
 	/// Некоторые части визуально выделены для отображения найденных частей(задается selectionFormats).
 	/// При обрезании текста, если за обрезанием остается форматирование - оно переносится на "..."
 	void DrawSearchFormatedText(QPainter * painter, const QString & text, const QRect & textRect, const QStyleOptionViewItem & opt,
