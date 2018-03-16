@@ -309,7 +309,7 @@ namespace viewed
 		for (; first != last; ++first)
 		{
 			m_store.push_back(self_type::make_internal(std::move(*first)));
-			updated.push_back(get_pointer(m_store.back()));
+			inserted.push_back(get_pointer(m_store.back()));
 		}
 
 		notify_views(erased, updated, inserted);
