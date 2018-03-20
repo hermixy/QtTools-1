@@ -214,7 +214,7 @@ namespace QtTools
 		/// выполняет перемещение колонок, учитывает есть ли отслеживаемый QHeaderView,
 		/// sections - указатели в m_sectionContainer на перемещаемые секции
 		/// destinationChild - номер строки, перед которой вставляются элементы, как в QAbstractItemModel::moveRows
-		void MoveSections(const QVector<const void *> & sections, int destinationChild);
+		void MoveSections(const std::vector<const void *> & sections, int destinationChild);
 
 		/// заполняет секцию данными из QHeaderView
 		void InitSectionFromHeader(section_info & info, int logicalIndex);
@@ -451,7 +451,7 @@ namespace QtTools
 			auto first = m_sectionContainer.begin() + sourceRow;
 			auto last = m_sectionContainer.begin() + sourceRow + count;
 
-			QVector<const void *> sections;
+			std::vector<const void *> sections;
 			sections.resize(count);
 			for (auto out = sections.begin(); first != last; ++first, ++out)
 				*out = &*first;
@@ -462,7 +462,7 @@ namespace QtTools
 	}
 
 	template <class SectionInfoTraits, class BaseModel>
-	void BasicHeaderControlModel<SectionInfoTraits, BaseModel>::MoveSections(const QVector<const void *> & sections, int destinationChild)
+	void BasicHeaderControlModel<SectionInfoTraits, BaseModel>::MoveSections(const std::vector<const void *> & sections, int destinationChild)
 	{
 		auto & seqview = m_sectionContainer.template get<BySeq>();
 		for (const void * ptr : sections)
@@ -645,7 +645,7 @@ namespace QtTools
 		//  * или скидываем на элемент и тогда parent его идентифицирует,
 		//     в нашем случае невозможно, поскольку мы запретили это методом flags
 		//  * или скидываем после последнего элемента
-		const QVector<const void *> & sections = qobject_cast<const CodeListMime *>(data)->sections;
+		const std::vector<const void *> & sections = qobject_cast<const CodeListMime *>(data)->sections;
 
 		if (row == -1) // row == -1 если мы скидываем ниже последнего item'а
 			row = rowCount();

@@ -1,5 +1,4 @@
 #include <QtCore/QObject>
-#include <QtCore/QVector>
 #include <QtCore/QMimeData>
 
 namespace QtTools
@@ -28,7 +27,7 @@ namespace QtTools
 		static const QStringList MimeFormats;
 
 		// codes transfered via this drag&drop operation, void * to simplify adn not depend on template type
-		QVector<const void *> sections;
+		std::vector<const void *> sections;
 
 		// pointer to a model, which started this operation.
 		// To ensure internal only move
@@ -36,7 +35,7 @@ namespace QtTools
 
 	public:
 		CodeListMime() = default;
-		CodeListMime(QVector<const void *> sections, const void * model)
+		CodeListMime(std::vector<const void *> sections, const void * model)
 			: sections(std::move(sections)), model(model) {}
 
 		QStringList formats() const override;
