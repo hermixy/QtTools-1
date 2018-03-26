@@ -116,10 +116,18 @@ namespace viewed
 
 		for (; first != last; ++first)
 		{
-			int row = *first;
+			// lower index on top, higher on bottom
+			int top, bottom;
+			top = bottom = *first;
 
-			auto top_left = model->index(row, 0, model_type::invalid_index);
-			auto bottom_right = model->index(row, ncols - 1, model_type::invalid_index);
+			// try to find the sequences with step of 1, for example: ..., 4, 5, 6, ...
+			for (++first; first != last and *first - bottom == 1; ++first, ++bottom)
+				continue;
+
+			--first;
+
+			auto top_left = model->index(top, 0, model_type::invalid_index);
+			auto bottom_right = model->index(bottom, ncols - 1, model_type::invalid_index);
 			model->dataChanged(top_left, bottom_right, model_type::all_roles);
 		}
 	}
@@ -161,32 +169,48 @@ namespace viewed
 		const signal_range_type & sorted_updated,
 		const signal_range_type & inserted)
 	{
+		int_vector affected_indexes(sorted_erased.size() + sorted_updated.size());
+		int_vector::iterator erased_first, erased_last, changed_first, changed_last;
+		erased_first = erased_last = affected_indexes.begin();
+		changed_first = changed_last = affected_indexes.end();
+
+		// find/emit changes
+		if (not sorted_updated.empty())
+		{
+			auto first = m_store.begin();
+			auto last  = m_store.end();
+
+			auto is_updated = [&sorted_updated](view_pointer_type ptr) { return boost::binary_search(sorted_updated, ptr); };
+			for (auto it = std::find_if(first, last, is_updated); it != last; it = std::find_if(++it, last, is_updated))
+				*--changed_first = static_cast<int>(it - first);
+
+			std::reverse(changed_first, changed_last);
+			emit_changed(changed_first, changed_last);
+		}
+
+
 		if (sorted_erased.empty())
 		{
-			if (inserted.empty()) return;
+			if (not inserted.empty())
+			{
+				// just inserts, simple beginInsertRows/endInsertRows case
+				int first = static_cast<int>(m_store.size());
+				int last  = static_cast<int>(m_store.size() + inserted.size() - 1);
 
-			int first = static_cast<int>(m_store.size());
-			int last  = static_cast<int>(m_store.size() + inserted.size() - 1);
-		
-			auto * model = get_model();
-			model->beginInsertRows(model_type::invalid_index, first, last);
-			boost::push_back(m_store, inserted);
-			model->endInsertRows();
+				auto * model = get_model();
+				model->beginInsertRows(model_type::invalid_index, first, last);
+				boost::push_back(m_store, inserted);
+				model->endInsertRows();
+			}
 		}
 		else
 		{
-			auto test = [&sorted_erased](view_pointer_type ptr)
-			{
-				return boost::binary_search(sorted_erased, ptr);
-			};
-
-			int_vector affected_indexes(sorted_erased.size());
-			auto erased_first = affected_indexes.begin();
-			auto erased_last = erased_first;
+			// some erased, some inserted -> more complex layoutAboutToBeChanged/layoutAboutToBeChanged case
 			auto first = m_store.begin();
-			auto last = m_store.end();
+			auto last  = m_store.end();
 
-			for (auto it = std::find_if(first, last, test); it != last; it = std::find_if(++it, last, test))
+			auto is_erased = [&sorted_erased](view_pointer_type ptr) { return boost::binary_search(sorted_erased, ptr); };
+			for (auto it = std::find_if(first, last, is_erased); it != last; it = std::find_if(++it, last, is_erased))
 				*erased_last++ = static_cast<int>(it - first);
 
 			auto * model = get_model();

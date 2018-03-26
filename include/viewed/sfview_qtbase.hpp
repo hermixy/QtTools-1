@@ -350,8 +350,9 @@ namespace viewed
 				}
 			}
 
-			//emit_changed(changed_first, changed_last);
 			order_changed = changed_first != changed_last;
+			std::reverse(changed_first, changed_last);
+			emit_changed(changed_first, changed_last);
 			
 			middle = viewed::remove_indexes(first, middle, removed_first, removed_last);
 			last = std::copy_if(first_updated, last_updated, middle,
