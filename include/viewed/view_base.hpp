@@ -82,7 +82,7 @@ namespace viewed
 		static_assert(std::is_pointer_v<view_pointer_type>);
 
 		static view_pointer_type get_view_pointer(const value_type & val)  { return container_type::get_view_pointer(val); }
-		static const_reference   get_view_reference(view_pointer_type ptr) { return container_type::get_view_pointer(ptr); }
+		static const_reference   get_view_reference(view_pointer_type ptr) { return container_type::get_view_reference(ptr); }
 
 	protected:
 		typedef typename container_type::signal_range_type   signal_range_type;
