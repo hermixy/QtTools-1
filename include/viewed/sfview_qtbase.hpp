@@ -173,15 +173,15 @@ namespace viewed
 
 		/// refilters m_store with m_filter_pred according to rtype:
 		/// * same        - does nothing and immediately returns(does not emit any qt signals)
-		/// * incremental - calls refilter_full
-		/// * full        - calls refilter_incremental
+		/// * incremental - calls refilter_full_and_notify
+		/// * full        - calls refilter_incremental_and_notify
 		virtual void refilter_and_notify(refilter_type rtype);
 		/// removes elements not passing m_filter_pred from m_store
 		/// emits qt layoutAboutToBeChanged(..., NoLayoutChangeHint), layoutUpdated(..., NoLayoutChangeHint)
-		virtual void refilter_incremental();
+		virtual void refilter_incremental_and_notify();
 		/// fills m_store from owner with values passing m_filter_pred and sorts them according to m_sort_pred
 		/// emits qt layoutAboutToBeChanged(..., NoLayoutChangeHint), layoutUpdated(..., NoLayoutChangeHint)
-		virtual void refilter_full();
+		virtual void refilter_full_and_notify();
 
 	public:
 		sfview_qtbase(container_type * owner,
@@ -493,13 +493,13 @@ namespace viewed
 			default:
 			case refilter_type::same:        return;
 
-			case refilter_type::incremental: return refilter_incremental();
-			case refilter_type::full:        return refilter_full();
+			case refilter_type::incremental: return refilter_incremental_and_notify();
+			case refilter_type::full:        return refilter_full_and_notify();
 		}
 	}
 
 	template <class Container, class SortPred, class FilterPred>
-	void sfview_qtbase<Container, SortPred, FilterPred>::refilter_incremental()
+	void sfview_qtbase<Container, SortPred, FilterPred>::refilter_incremental_and_notify()
 	{
 		if (not active(m_filter_pred)) return;
 		
@@ -527,7 +527,7 @@ namespace viewed
 	}
 
 	template <class Container, class SortPred, class FilterPred>
-	void sfview_qtbase<Container, SortPred, FilterPred>::refilter_full()
+	void sfview_qtbase<Container, SortPred, FilterPred>::refilter_full_and_notify()
 	{
 		if (not active(m_sort_pred) and not active(m_filter_pred))
 			base_type::reinit_view();
