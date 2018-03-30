@@ -63,6 +63,7 @@
     <ClCompile Include="src\ToolsBase.cpp" />
     <ClCompile Include="src\StandardItemModel.cpp" />
     <ClCompile Include="src\ListModel.cpp" />
+    <ClCompile Include="src\Utility.cpp" />
   </ItemGroup>
   <ItemGroup>
     <QtMOCCompile Include="include\QtTools\BasicHeaderControlModelHelper.hqt" />
@@ -92,6 +93,7 @@
     <ClInclude Include="include\QtTools\StringInterpolation.hpp" />
     <ClInclude Include="include\QtTools\ToolsBase.hpp" />
     <ClInclude Include="include\QtTools\HeaderSectionInfo.hpp" />
+    <ClInclude Include="include\QtTools\Utility.hpp" />
     <ClInclude Include="include\varalgo\adjacent_find.hpp" />
     <ClInclude Include="include\varalgo\all.hpp" />
     <ClInclude Include="include\varalgo\all_of.hpp" />

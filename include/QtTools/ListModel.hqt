@@ -1,10 +1,10 @@
 #pragma once
+#include <vector>
 #include <algorithm>
 #include <functional>
 #include <ext/iterator/zip_iterator.hpp>
 #include <ext/algorithm/slide.hpp>
 
-#include <QtCore/QVector>
 #include <QtCore/QAbstractItemModel>
 #include <QtCore/QMimeData>
 #include <QtCore/QString>
@@ -78,7 +78,7 @@ namespace QtTools
 	/// Реализация модели списка, подобно QStringListModel, только для любого типа.
 	/// @Param Type тип элементов, должен быть совместимым с QVariant и Container
 	/// @Param Container std::vector совместимый контейнер, например QVector
-	template <class Type, template <class...> class Container = QVector>
+	template <class Type, template <class...> class Container = std::vector>
 	class ListModel : public ListModelBase
 	{
 		typedef ListModel           self_type;

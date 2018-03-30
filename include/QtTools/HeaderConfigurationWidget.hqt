@@ -54,8 +54,5 @@ namespace QtTools
 		void retranslateUi();
 		void setupUi();
 		void connectSignals();
-
-		QIcon loadIcon(const QString & themeIcon, const QString & fallback);
-		QIcon loadIcon(const QString & themeIcon, QStyle::StandardPixmap fallback);
 	};
 }

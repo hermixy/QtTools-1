@@ -1,5 +1,6 @@
 #include <QtTools/HeaderConfigurationWidget.hqt>
 #include <QtTools/ToggleChecked.hpp>
+#include <QtTools/Utility.hpp>
 
 #include <QtWidgets/QShortcut>
 #include <QtWidgets/QLineEdit>
@@ -62,22 +63,6 @@ namespace QtTools
 		connect(m_downEntryButton, &QToolButton::clicked, this, &HeaderConfigurationWidget::OnDownItem);
 	}
 
-	QIcon HeaderConfigurationWidget::loadIcon(const QString & themeIcon, const QString & fallback)
-	{
-		if (QIcon::hasThemeIcon(themeIcon))
-			return QIcon::fromTheme(themeIcon);
-
-		return QIcon(fallback);
-	}
-
-	QIcon HeaderConfigurationWidget::loadIcon(const QString & themeIcon, QStyle::StandardPixmap fallback)
-	{
-		if (QIcon::hasThemeIcon(themeIcon))
-			return QIcon::fromTheme(themeIcon);
-
-		return style()->standardIcon(fallback);
-	}
-
 	void HeaderConfigurationWidget::setupUi()
 	{
 		// main layout
@@ -102,11 +87,12 @@ namespace QtTools
 			m_downEntryButton = new QToolButton(this);
 
 			//set icons
-			m_toggleSelectedButton->setIcon(loadIcon("checkbox-toggle-selected", ":/QtTools/icons/checkbox-toggle-selected.ico"));
-			m_resetButton->setIcon(loadIcon("edit-reset", ":/QtTools/icons/edit-reset.ico"));
-			m_eraseNonPresentButton->setIcon(loadIcon("edit-clear", ":/QtTools/icons/edit-clear.ico"));
-			m_upEntryButton->setIcon(loadIcon("go-up", QStyle::SP_ArrowUp));
-			m_downEntryButton->setIcon(loadIcon("go-down", QStyle::SP_ArrowDown));
+			using QtTools::LoadIcon;
+			m_toggleSelectedButton->setIcon(LoadIcon("checkbox-toggle-selected", ":/QtTools/icons/checkbox-toggle-selected.ico"));
+			m_resetButton->setIcon(LoadIcon("edit-reset", ":/QtTools/icons/edit-reset.ico"));
+			m_eraseNonPresentButton->setIcon(LoadIcon("edit-clear", ":/QtTools/icons/edit-clear.ico"));
+			m_upEntryButton->setIcon(LoadIcon("go-up", QStyle::SP_ArrowUp, style()));
+			m_downEntryButton->setIcon(LoadIcon("go-down", QStyle::SP_ArrowDown, style()));
 
 			m_horizontalLayout->addWidget(m_resetButton);
 			m_horizontalLayout->addWidget(m_eraseNonPresentButton);
