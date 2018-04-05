@@ -41,14 +41,13 @@ namespace viewed
 	/// sfview_qtbase is sorted and filtered based on provided SortPred, FilterPred.
 	/// Those can be: simple predicate or std::variant of different predicates.
 	/// 
-	/// predicates can, optionally, be converted to bool: static_cast<bool>(pred) == true ->
+	/// predicates can, optionally, be convertible to bool: static_cast<bool>(pred) == true ->
 	/// predicate is active, if conversion is not provided - predicate is always active.
 	///   sort_pred - predicate can sort items, otherwise it can not and whole view will be unsorted.
 	///   filter_pred - predicate can filter items, otherwise it is assumed all items are always passes filter(empty filter)
 	/// 
 	/// In derived class you can provide methods like sort_by/filter_by,
 	/// which will configure those predicates
-	/// on construction this class initializes internal store
 	/// 
 	/// @Param Container - class to which this view will connect and listen updates, see view_qtbase for more description
 	/// @Param SortPred - sort predicate or std::variant of predicates,
@@ -101,10 +100,6 @@ namespace viewed
 	protected:
 		filter_pred_type m_filter_pred;
 		sort_pred_type m_sort_pred;
-
-	public:
-		sort_pred_type sort_pred() const { return m_sort_pred; }
-		filter_pred_type filter_pred() const { return m_filter_pred; }
 
 	protected:
 		static void mark_pointer(view_pointer_type & ptr) { reinterpret_cast<std::uintptr_t &>(ptr) |= 1; }
@@ -182,6 +177,13 @@ namespace viewed
 		/// fills m_store from owner with values passing m_filter_pred and sorts them according to m_sort_pred
 		/// emits qt layoutAboutToBeChanged(..., NoLayoutChangeHint), layoutUpdated(..., NoLayoutChangeHint)
 		virtual void refilter_full_and_notify();
+
+	public:
+		const auto & sort_pred()   const { return m_sort_pred; }
+		const auto & filter_pred() const { return m_filter_pred; }
+
+		template <class ... Args> auto filter_by(Args && ... args) -> refilter_type;
+		template <class ... Args> void sort_by(Args && ... args);
 
 	public:
 		sfview_qtbase(container_type * owner,
@@ -544,5 +546,23 @@ namespace viewed
 			signal_const_iterator noerased {};
 			update_store(first, first_updated, last, last, noerased, noerased);
 		}
+	}
+
+	template <class Container, class SortPred, class FilterPred>
+	template <class ... Args>
+	auto sfview_qtbase<Container, SortPred, FilterPred>::filter_by(Args && ... args) -> refilter_type
+	{
+		auto rtype = m_filter_pred.set_expr(std::forward<Args>(args)...);
+		refilter_and_notify(rtype);
+
+		return rtype;
+	}
+
+	template <class Container, class SortPred, class FilterPred>
+	template <class ... Args>
+	void sfview_qtbase<Container, SortPred, FilterPred>::sort_by(Args && ... args)
+	{
+		m_sort_pred = sort_pred_type(std::forward<Args>(args)...);
+		sort_and_notify(m_store.begin(), m_store.end());
 	}
 }

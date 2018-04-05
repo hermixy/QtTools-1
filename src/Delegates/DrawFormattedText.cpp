@@ -191,8 +191,8 @@ namespace Delegates
 
 		if (needsElide)
 		{
+			// same as ElideLineRect(textLayout, elideIdx), but inplace
 			auto line = textLayout.lineAt(elideIdx);
-			/// same as ElideLineRect(textLayout, elideIdx), but inplace
 			drawRect.adjust(0, drawRect.height() - line.height(), 0, 0);
 
 			int elidePoint = line.textStart();
