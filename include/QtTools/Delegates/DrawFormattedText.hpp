@@ -79,8 +79,11 @@ namespace Delegates
 		QTextOption PrepareTextOption(const QStyleOptionViewItem & opt);
 
 		/// рисует линии из layout до elideIndex в drawRect(смотри описание DoLayout)
-		/// drawRect должен учитывать alignment, например, с помощью
-		void DrawLayout(QPainter * painter, const QRectF & drawRect, const QTextLayout & layout, int elideIndex);
+		void DrawLayout(QPainter * painter, const QPointF & drawPos, const QTextLayout & layout, int elideIndex);
+		
+		inline void DrawLayout(QPainter * painter, const QPointF & drawPos, const QTextLayout & layout)
+		{ return DrawLayout(painter, drawPos, layout, layout.lineCount()); }
+
 	}
 
 	/// Подготавливает painter для дальнейшего рисования

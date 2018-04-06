@@ -111,7 +111,8 @@ namespace Delegates
 			for (int i = 0; i < lc; ++i)
 			{
 				QTextLine line = layout.lineAt(i);
-				rect |= line.naturalTextRect();
+				QRectF offset = {QPointF {0.0, 0.0}, line.position()};
+				rect |= offset | line.naturalTextRect();
 			}
 
 			return rect;
@@ -123,9 +124,8 @@ namespace Delegates
 			return boundingRectangle.adjusted(0, boundingRectangle.height() - line.height(), 0, 0);
 		}
 
-		void DrawLayout(QPainter * painter, const QRectF & drawRect, const QTextLayout & layout, int elideIndex)
+		void DrawLayout(QPainter * painter, const QPointF & drawPos, const QTextLayout & layout, int elideIndex)
 		{
-			auto drawPos = drawRect.topLeft();
 			for (int i = 0; i < elideIndex; ++i)
 			{
 				auto line = layout.lineAt(i);
@@ -187,7 +187,7 @@ namespace Delegates
 		auto totalRect = BoundingRect(textLayout, elideIdx).toAlignedRect();
 		auto totalHeight = totalRect.height();
 		auto drawRect = AlignedRect(style, opt, {textRect.width(), totalHeight}, textRect);
-		DrawLayout(painter, drawRect, textLayout, elideIdx);
+		DrawLayout(painter, drawRect.topLeft(), textLayout, elideIdx);
 
 		if (needsElide)
 		{
@@ -206,7 +206,7 @@ namespace Delegates
 			elideLayout.setCacheEnabled(true);
 			DoLayout(elideLayout, drawRect);
 			// обманываем, нам нужно что бы он нарисовал одну единственную линию
-			DrawLayout(painter, drawRect, elideLayout, 1);
+			DrawLayout(painter, drawRect.topLeft(), elideLayout, 1);
 		}
 	}
 }}

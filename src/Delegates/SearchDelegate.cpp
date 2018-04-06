@@ -32,7 +32,7 @@ namespace Delegates
 	}
 
 
-	static void ColorifyElidePoint(QString & elidedText, QVector<QTextLayout::FormatRange> & formats)
+	void ColorifyElidePoint(const QString & elidedText, QVector<QTextLayout::FormatRange> & formats)
 	{
 		const auto elideSymbol = QChar(0x2026);
 		auto pos = elidedText.lastIndexOf(elideSymbol);
@@ -65,7 +65,7 @@ namespace Delegates
 		auto * style = AccquireStyle(opt);
 		auto textOption = PrepareTextOption(opt);
 
-		QTextLayout textLayout(text, opt.font);
+		QTextLayout textLayout(text, opt.font, painter->device());
 		textLayout.setTextOption(textOption);
 		textLayout.setFormats(selectionFormats);
 		textLayout.setCacheEnabled(true);
@@ -76,7 +76,7 @@ namespace Delegates
 		auto totalRect = BoundingRect(textLayout, elideIdx).toAlignedRect();
 		auto totalHeight = totalRect.height();
 		auto drawRect = AlignedRect(style, opt, {textRect.width(), totalHeight}, textRect);
-		DrawLayout(painter, drawRect, textLayout, elideIdx);
+		DrawLayout(painter, drawRect.topLeft(), textLayout, elideIdx);
 
 		if (needsElide)
 		{
@@ -92,14 +92,14 @@ namespace Delegates
 			auto elidedFormats = ElideFormats(selectionFormats, elidePoint);
 			ColorifyElidePoint(elidedText, elidedFormats);
 
-			QTextLayout elideLayout {elidedText, opt.font};
+			QTextLayout elideLayout(elidedText, opt.font, painter->device());
 			elideLayout.setTextOption(textOption);
 			elideLayout.setFormats(selectionFormats);
 			elideLayout.setCacheEnabled(true);
 
 			DoLayout(elideLayout, drawRect);
 			// обманываем, нам нужно что бы он нарисовал одну единственную линию
-			DrawLayout(painter, drawRect, elideLayout, 1);
+			DrawLayout(painter, drawRect.topLeft(), elideLayout, 1);
 		}
 	}
 

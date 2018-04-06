@@ -23,6 +23,9 @@ namespace Delegates
 	auto FormatSearchText(const QString & text, const QString & filterWord, const QTextCharFormat & format)
 		-> QVector<QTextLayout::FormatRange>;
 
+	/// переносит "Раскрашивание" текста после символа обрезания(Elide symbol, \u2026) на сам символ
+	void ColorifyElidePoint(const QString & elidedText, QVector<QTextLayout::FormatRange> & formats);
+
 	/// Делегат, отображающий текст подобно QStyledItemDelegate.
 	/// дополнительно ищет заданный текст в отображаемой строке, и подсвечивает найденные участки
 	class SearchDelegate : public StyledDelegate
