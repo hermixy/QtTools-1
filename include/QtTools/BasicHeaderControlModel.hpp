@@ -1,3 +1,4 @@
+#pragma once
 #include <QtCore/QScopedPointer>
 #include <QtCore/QString>
 #include <QtCore/QHash>
