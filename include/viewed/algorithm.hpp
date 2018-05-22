@@ -4,9 +4,25 @@
 #include <vector>
 #include <algorithm>
 #include <numeric>
+#include <ext/type_traits.hpp>
 
 namespace viewed
 {
+	namespace detail
+	{
+		template <class Pred> static std::enable_if_t<    ext::static_castable_v<Pred, bool>, bool> active_visitor(const Pred & pred) { return static_cast<bool>(pred); }
+		template <class Pred> static std::enable_if_t<not ext::static_castable_v<Pred, bool>, bool> active_visitor(const Pred & pred) { return true; }
+	}
+
+	template <class Pred> static bool active(Pred && pred)
+	{
+		auto vis = [](const auto & pred) { return detail::active_visitor(pred); };
+		return varalgo::variant_traits<std::decay_t<Pred>>::visit(vis, std::forward<Pred>(pred));
+	}
+
+	// defined in <viewed/qt_model.hqt>
+	class AbstractItemModel;
+
 	/// inverses index array in following way:
 	/// inverse[arr[i] - offset] = i for first..last.
 	/// This is for when you have array of arr[new_index] => old_index,
@@ -86,5 +102,51 @@ namespace viewed
 		}
 
 		return std::move(it, last, out);
+	}
+
+
+	template <class RandomAccessIterator>
+	void emit_changed(AbstractItemModel * model, RandomAccessIterator first, RandomAccessIterator last)
+	{
+		if (first == last) return;
+
+		int ncols = model->columnCount(AbstractItemModel::invalid_index);
+		for (; first != last; ++first)
+		{
+			// lower index on top, higher on bottom
+			int top, bottom;
+			top = bottom = *first;
+
+			// try to find the sequences with step of 1, for example: ..., 4, 5, 6, ...
+			for (++first; first != last and *first - bottom == 1; ++first, ++bottom)
+				continue;
+
+			--first;
+
+			auto top_left = model->index(top, 0, AbstractItemModel::invalid_index);
+			auto bottom_right = model->index(bottom, ncols - 1, AbstractItemModel::invalid_index);
+			model->dataChanged(top_left, bottom_right, AbstractItemModel::all_roles);
+		}
+	}
+
+	template <class RandomAccessIterator>
+	void change_indexes(AbstractItemModel * model, RandomAccessIterator first, RandomAccessIterator last, int offset)
+	{
+		auto size = last - first;
+		auto list = model->persistentIndexList();
+
+		for (const auto & idx : list)
+		{
+			if (!idx.isValid()) continue;
+
+			auto row = idx.row();
+			auto col = idx.column();
+
+			if (row < offset) continue;
+
+			assert(row < size); (void)size;
+			auto newIdx = model->index(first[row - offset], col);
+			model->changePersistentIndex(idx, newIdx);
+		}
 	}
 }

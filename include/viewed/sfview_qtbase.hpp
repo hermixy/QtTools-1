@@ -23,7 +23,7 @@ namespace viewed
 	struct null_sorter
 	{
 		template <class Type>
-		bool operator()(const Type & v1, const Type & v2) const { return true; }
+		bool operator()(const Type & v1, const Type & v2) const { return &v1 < &v2; }
 		
 		explicit operator bool() const { return false; }
 	};
@@ -104,15 +104,6 @@ namespace viewed
 	protected:
 		static void mark_pointer(view_pointer_type & ptr) { reinterpret_cast<std::uintptr_t &>(ptr) |= 1; }
 		static bool is_marked(view_pointer_type ptr) { return reinterpret_cast<std::uintptr_t>(ptr) & 1; }
-
-		template <class Pred> static std::enable_if_t<    ext::static_castable_v<Pred, bool>, bool> active_visitor(const Pred & pred) { return static_cast<bool>(pred); }
-		template <class Pred> static std::enable_if_t<not ext::static_castable_v<Pred, bool>, bool> active_visitor(const Pred & pred) { return true; }
-
-		template <class Pred> static bool active(Pred && pred)
-		{
-			auto vis = [](const auto & pred) { return active_visitor(pred); };
-			return varalgo::variant_traits<std::decay_t<Pred>>::visit(vis, std::forward<Pred>(pred));
-		}
 
 	public:
 		/// reinitializes view from owner
