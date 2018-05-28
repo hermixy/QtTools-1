@@ -23,17 +23,17 @@ namespace viewed
 	struct null_sorter
 	{
 		template <class Type>
-		bool operator()(const Type & v1, const Type & v2) const { return &v1 < &v2; }
+		bool operator()(const Type & v1, const Type & v2) const noexcept { return &v1 < &v2; }
 		
-		explicit operator bool() const { return false; }
+		explicit operator bool() const noexcept { return false; }
 	};
 
 	struct null_filter
 	{
 		template <class Type>
-		bool operator()(const Type & v) { return true; }
+		bool operator()(const Type & v) const noexcept { return true; }
 		
-		explicit operator bool() const { return false; }
+		explicit operator bool() const noexcept { return false; }
 	};
 
 	/// see also view_qtbase description for more information
@@ -336,7 +336,7 @@ namespace viewed
 
 					mark_pointer(*found);
 					int row = static_cast<int>(it - first);
-					bool passes = not active(m_filter_pred) || m_filter_pred(*ptr);
+					bool passes = not active(m_filter_pred) or m_filter_pred(*ptr);
 
 					if (passes)   *--changed_first = row;
 					else          *removed_last++ = row;
