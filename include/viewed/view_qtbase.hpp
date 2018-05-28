@@ -109,15 +109,49 @@ namespace viewed
 	template <class Container>
 	void view_qtbase<Container>::emit_changed(int_vector::const_iterator first, int_vector::const_iterator last)
 	{
+		if (first == last) return;
+
 		auto * model = get_model();
-		return viewed::emit_changed(model, first, last);
+		int ncols = model->columnCount(model_type::invalid_index);
+
+		for (; first != last; ++first)
+		{
+			// lower index on top, higher on bottom
+			int top, bottom;
+			top = bottom = *first;
+
+			// try to find the sequences with step of 1, for example: ..., 4, 5, 6, ...
+			for (++first; first != last and *first - bottom == 1; ++first, ++bottom)
+				continue;
+
+			--first;
+
+			auto top_left = model->index(top, 0, model_type::invalid_index);
+			auto bottom_right = model->index(bottom, ncols - 1, model_type::invalid_index);
+			model->dataChanged(top_left, bottom_right, model_type::all_roles);
+		}
 	}
 
 	template <class Container>
 	void view_qtbase<Container>::change_indexes(int_vector::const_iterator first, int_vector::const_iterator last, int offset)
 	{
 		auto * model = get_model();
-		return viewed::change_indexes(model, first, last, offset);
+		auto size = last - first;
+
+		auto list = model->persistentIndexList();
+		for (const auto & idx : list)
+		{
+			if (!idx.isValid()) continue;
+
+			auto row = idx.row();
+			auto col = idx.column();
+
+			if (row < offset) continue;
+
+			assert(row < size); (void)size;
+			auto newIdx = model->index(first[row - offset], col);
+			model->changePersistentIndex(idx, newIdx);
+		}
 	}
 
 	template <class Container>
@@ -135,21 +169,23 @@ namespace viewed
 		const signal_range_type & sorted_updated,
 		const signal_range_type & inserted)
 	{
-		int_vector affected_indexes(std::max(sorted_erased.size(), sorted_updated.size()));
-		int_vector::iterator affected_first, affected_last;
-		
+		int_vector affected_indexes(sorted_erased.size() + sorted_updated.size());
+		int_vector::iterator erased_first, erased_last, changed_first, changed_last;
+		erased_first = erased_last = affected_indexes.begin();
+		changed_first = changed_last = affected_indexes.end();
+
 		// find/emit changes
 		if (not sorted_updated.empty())
 		{
 			auto first = m_store.begin();
 			auto last  = m_store.end();
-			affected_first = affected_last = affected_indexes.begin();
 
 			auto is_updated = [&sorted_updated](view_pointer_type ptr) { return boost::binary_search(sorted_updated, ptr); };
 			for (auto it = std::find_if(first, last, is_updated); it != last; it = std::find_if(++it, last, is_updated))
-				*affected_last++ = static_cast<int>(it - first);
-			
-			emit_changed(affected_first, affected_last);
+				*--changed_first = static_cast<int>(it - first);
+
+			std::reverse(changed_first, changed_last);
+			emit_changed(changed_first, changed_last);
 		}
 
 
@@ -172,19 +208,18 @@ namespace viewed
 			// some erased, some inserted -> more complex layoutAboutToBeChanged/layoutAboutToBeChanged case
 			auto first = m_store.begin();
 			auto last  = m_store.end();
-			affected_first = affected_last = affected_indexes.begin();
 
 			auto is_erased = [&sorted_erased](view_pointer_type ptr) { return boost::binary_search(sorted_erased, ptr); };
 			for (auto it = std::find_if(first, last, is_erased); it != last; it = std::find_if(++it, last, is_erased))
-				*affected_last++ = static_cast<int>(it - first);
+				*erased_last++ = static_cast<int>(it - first);
 
 			auto * model = get_model();
 			Q_EMIT model->layoutAboutToBeChanged(model_type::empty_model_list, model->NoLayoutChangeHint);
 
-			auto index_map = viewed::build_relloc_map(affected_first, affected_last, m_store.size());
+			auto index_map = viewed::build_relloc_map(erased_first, erased_last, m_store.size());
 			change_indexes(index_map.begin(), index_map.end(), 0);
 
-			last = viewed::remove_indexes(first, last, affected_first, affected_last);
+			last = viewed::remove_indexes(first, last, erased_first, erased_last);
 			
 			auto old_sz = last - first;
 			m_store.resize(old_sz + inserted.size());
