@@ -5,8 +5,8 @@
 #include <tuple>       // for std::get
 
 #include <boost/variant.hpp>
-#include <boost/mpl/transform.hpp>
-#include <boost/mpl/placeholders.hpp>
+#include <boost/mp11/algorithm.hpp>
+#include <boost/mp11/bind.hpp>
 
 namespace viewed
 {
@@ -48,22 +48,13 @@ namespace viewed
 			typedef typename make_get_functor_type<Index, Type>::type type;
 		};
 
-		typedef boost::variant<VariantTypes...> initial_variant;
-		typedef typename boost::mpl::transform <
-			typename initial_variant::types,
-			helper<boost::mpl::_1>
-		>::type transformed;
-
-	public:
-		typedef typename boost::make_variant_over<transformed>::type type;
+		using type = boost::mp11::mp_transform<helper, boost::variant<VariantTypes...>>;
 	};
 
 	template <std::size_t Index, class Functor>
-	inline
-	typename make_get_functor_type<Index, Functor>::type
-	make_get_functor(const Functor & func)
+	inline auto make_get_functor(const Functor & func)		
 	{
-		return {func};
+		using result_type = typename make_get_functor_type<Index, Functor>::type;
+		return result_type {func};
 	}
-
 }

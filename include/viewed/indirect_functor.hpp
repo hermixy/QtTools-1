@@ -3,8 +3,7 @@
 #include <functional>  // for reference_wrapprer
 #include <ext/functors/indirect_functor.hpp>
 #include <boost/variant.hpp>
-#include <boost/mpl/transform.hpp>
-#include <boost/mpl/placeholders.hpp>
+#include <boost/mp11/algorithm.hpp>
 
 namespace viewed
 {
@@ -23,23 +22,15 @@ namespace viewed
 	template <class... VariantTypes>
 	struct make_indirect_pred_type<boost::variant<VariantTypes...>>
 	{
-		typedef boost::variant<VariantTypes...> initial_variant;
-		typedef typename boost::mpl::transform <
-			typename initial_variant::types,
-			make_indirect_pred_type<boost::mpl::_1>
-		>::type transformed;
-
-	public:
-		typedef typename boost::make_variant_over<transformed>::type type;
+		using type = boost::mp11::mp_transform<viewed::make_indirect_pred_type, boost::variant<VariantTypes...>>;
 	};
 
 	///аналогичен boost::make_indirect_fun,
 	///но корректно обрабатывает boost::variant
 	template <class Pred>
-	inline
-	typename make_indirect_pred_type<Pred>::type
-		make_indirect_fun(const Pred & pred)
+	inline auto make_indirect_fun(const Pred & pred)
 	{
-		return {pred};
+		using result_type = typename make_indirect_pred_type<Pred>::type;
+		return result_type {pred};
 	}
 }
