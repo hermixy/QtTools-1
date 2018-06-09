@@ -8,22 +8,10 @@ namespace QtTools {
 namespace Delegates
 {
 #ifdef Q_OS_WIN
-	static const std::type_info * GetKnownStyleType(const char * name)
-	{
-		auto keys = QStyleFactory::keys();
-		int idx = keys.indexOf(name);
-		if (idx < 0) return nullptr;
-
-		auto * style = QStyleFactory::create(keys[idx]);
-		if (!style) return nullptr;
-		return &typeid(*style);
-	}
-
-	static const std::type_info * windowsVistaStyleTypeId = GetKnownStyleType("WindowsVista");
-
 	static bool IsWindowsVistaStyle(QStyle * style)
 	{
-		return style && windowsVistaStyleTypeId && typeid(*style) == *windowsVistaStyleTypeId;
+		auto obj = style->objectName();
+		return obj.compare("WindowsVista", Qt::CaseInsensitive) == 0;
 	}
 #endif
 
