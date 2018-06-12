@@ -1,4 +1,5 @@
 #pragma once
+#include <cstddef>
 #include <cstdint>
 #include <type_traits>
 #include <vector>
@@ -20,6 +21,51 @@ namespace viewed
 		return varalgo::variant_traits<std::decay_t<Pred>>::visit(vis, std::forward<Pred>(pred));
 	}
 
+	template <class Type>
+	constexpr inline Type mark_pointer(Type ptr) noexcept
+	{
+		static_assert(std::is_pointer_v<Type>);
+		reinterpret_cast<std::uintptr_t &>(ptr) |= 1;
+		return ptr;
+	}
+
+	template <class Type>
+	constexpr inline Type unmark_pointer(Type ptr) noexcept
+	{
+		static_assert(std::is_pointer_v<Type>);
+		reinterpret_cast<std::uintptr_t &>(ptr) &= ~(std::uintptr_t)1;
+		return ptr;
+	}
+
+	template <class Type>
+	constexpr inline bool marked_pointer(Type ptr) noexcept
+	{
+		static_assert(std::is_pointer_v<Type>);
+		return reinterpret_cast<std::uintptr_t>(ptr) & 1;
+	}
+
+	namespace detail
+	{
+		constexpr int INDEX_MARK_MASK = 1 << (sizeof(int) * CHAR_BIT - 1);
+		constexpr int INDEX_UNMARK_MASK = ~INDEX_MARK_MASK;
+		static_assert(INDEX_MARK_MASK == INT_MIN, "some very unusual architecture here");
+	}
+
+	constexpr inline int mark_index(int idx) noexcept
+	{
+		return idx |= detail::INDEX_MARK_MASK;
+	}
+
+	constexpr inline int unmark_index(int idx) noexcept
+	{
+		return idx &= detail::INDEX_UNMARK_MASK;
+	}
+
+	constexpr inline bool marked_index(int idx) noexcept
+	{
+		return idx & detail::INDEX_MARK_MASK;
+	}
+
 	/// inverses index array in following way:
 	/// inverse[arr[i] - offset] = i for first..last.
 	/// This is for when you have array of arr[new_index] => old_index,
@@ -37,7 +83,7 @@ namespace viewed
 		for (auto it = first; it != last; ++it, ++i)
 		{
 			value_type val = *it;
-			inverse[std::abs(val) - offset] = val >= 0 ? i : -1;
+			inverse[unmark_index(val) - offset] = not marked_index(val) ? i : -1;
 		}
 
 		std::copy(inverse.begin(), inverse.end(), first);

@@ -101,19 +101,6 @@ namespace viewed
 		filter_pred_type m_filter_pred;
 		sort_pred_type m_sort_pred;
 
-	protected:
-		static void mark_pointer(view_pointer_type & ptr) { reinterpret_cast<std::uintptr_t &>(ptr) |= 1; }
-		static bool is_marked(view_pointer_type ptr) { return reinterpret_cast<std::uintptr_t>(ptr) & 1; }
-
-		template <class Pred> static std::enable_if_t<    ext::static_castable_v<Pred, bool>, bool> active_visitor(const Pred & pred) { return static_cast<bool>(pred); }
-		template <class Pred> static std::enable_if_t<not ext::static_castable_v<Pred, bool>, bool> active_visitor(const Pred & pred) { return true; }
-
-		template <class Pred> static bool active(Pred && pred)
-		{
-			auto vis = [](const auto & pred) { return active_visitor(pred); };
-			return varalgo::variant_traits<std::decay_t<Pred>>::visit(vis, std::forward<Pred>(pred));
-		}
-
 	public:
 		/// reinitializes view from owner
 		virtual void reinit_view() override;
@@ -343,7 +330,7 @@ namespace viewed
 					if (found == last_updated) continue;
 					if (ptr != *found) continue;
 
-					mark_pointer(*found);
+					*found = mark_pointer(*found);
 					int row = static_cast<int>(it - first);
 					bool passes = not active(m_filter_pred) or m_filter_pred(*ptr);
 
@@ -358,7 +345,7 @@ namespace viewed
 			
 			middle = viewed::remove_indexes(first, middle, removed_first, removed_last);
 			last = std::copy_if(first_updated, last_updated, middle,
-			                    [fpred](auto ptr) { return not is_marked(ptr) and fpred(ptr); });
+			                    [fpred](auto ptr) { return not marked_pointer(ptr) and fpred(ptr); });
 			
 			if (active(m_filter_pred))
 				last = std::copy_if(first_inserted, last_inserted, last, fpred);
@@ -384,7 +371,7 @@ namespace viewed
 
 		std::iota(ifirst, ilast, offset);
 		ilast = viewed::remove_indexes(ifirst, ilast, removed_first, removed_last);
-		ilast = std::transform(removed_first, removed_last, ilast, [](auto val) { return -val; });
+		ilast = std::transform(removed_first, removed_last, ilast, [](int val) { return mark_index(val); });
 
 		merge_newdata(
 			first, middle, last,

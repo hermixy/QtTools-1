@@ -2,6 +2,7 @@
 #include <algorithm>
 #include <iterator> // for back_inserter
 #include <viewed/signal_traits.hpp>
+#include <viewed/algorithm.hpp>
 #include <ext/try_reserve.hpp>
 
 namespace viewed
@@ -168,10 +169,6 @@ namespace viewed
 		template <class... Args> connection on_clear(Args && ... args)  { return m_clear_signal.connect(std::forward<Args>(args)...); }
 
 	protected:
-		static void mark_pointer(const_pointer & ptr) { reinterpret_cast<std::uintptr_t &>(ptr) |= 1; }
-		static bool is_marked(const_pointer ptr) { return reinterpret_cast<std::uintptr_t>(ptr) & 1; }
-
-	protected:
 		/// finds and updates or appends elements from [first; last) into internal store m_store
 		/// those elements also placed into upserted_recs for further notifications of views
 		template <class SinglePassIterator>
@@ -292,11 +289,11 @@ namespace viewed
 
 				// remove found item from erase list
 				auto it = std::lower_bound(erased_first, erased_last, ptr);
-				if (it != erased_last and *it == ptr) mark_pointer(*it);
+				if (it != erased_last and *it == ptr) *it = mark_pointer(*it);
 			}
 		}
 
-		erased_last = std::remove_if(erased_first, erased_last, is_marked);
+		erased_last = std::remove_if(erased_first, erased_last, [](auto ptr) { return marked_pointer(ptr); });
 		erased.erase(erased_last, erased.end());
 		std::sort(updated.begin(), updated.end());
 		notify_views(erased, updated, inserted);
