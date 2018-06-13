@@ -15,29 +15,27 @@ namespace viewed
 	///  * STL compatible interface, indirected, not pointers
 	///  * it connects signals from container to handlers(which are virtual and can be overridden)
 	///    basic implementation does almost nothing, just synchronizes view with data owning container
-	///    derived classes can seal themselves with final on those methods
 	/// 
 	/// Main container expected to live as long as view does. View holds only non owning pointers to data
 	/// 
 	/// container must meet following conditions:
 	/// * STL compatible interface(types, methods)
 	/// * view_pointer_type - pointer typedef, typically const value_type *
-	///   get_view_pointer(const_reference ref) -> view_pointer_type - static member function
-	///   get_view_reference(view_pointer_type ptr) -> const_reference - static member function
+	///   get_view_pointer(const_reference ref) -> view_pointer_type - static member function/functor
+	///   get_view_reference(view_pointer_type ptr) -> const_reference - static member function/functor
 	///   
 	/// * at least forward iterator category, but pointers/references must be stable, iterators can be unstable
 	/// * have member type:
 	///     signal_range_type - random access range of valid pointers(at least at moment of call) to value_type
-	///                         sorted by pointer value
 	///     scoped_connection - owning signal connection handle, breaks connection in destructor
 	///     
 	/// * on_update member function which connects given functor with signal and returns connection.
-	///             slot signature is: void (signal_range_type sorted_erased, signal_range_type sorted_updated, signal_range_type inserted).
+	///             slot signature is: void (signal_range_type erased, signal_range_type updated, signal_range_type inserted).
 	///             signal is emitted in process of updating data in container(after update/insert, before erase) with 3 ranges of pointers.
 	///             1st points to removed elements, 2nd points to elements that were updated, 3nd to newly inserted.
 	///             
 	/// * on_erase member function which connects given functor with signal and returns connection.
-	///             slot signature is: void (signal_range_type sorted_recsptr_toremove).
+	///             slot signature is: void (signal_range_type erased).
 	///             signal is emitted before data is erased from container, with range of pointers to elements to erase.
 	///             
 	/// * on_clear member function which connects given functor with signal and returns connection.
@@ -48,20 +46,14 @@ namespace viewed
 	/// this class is intended to be inherited and extended to provide more functionality
 	/// sorting, filtering, and may be more
 	/// 
-	/// derived classes should implement:
+	/// derived classes should reimplement:
 	///  * update_data
 	///  * reinit_view
 	///  * clear_view
 	///  * erase_records
-	///  * initialization in constructor,
-	///    this class does not connects signals nor initializes store, but provides methods
 	/// (see method declaration for more description)
 	///
-	/// @Param Container class to which this view will connect and listen updates
-	///                  Container must have on_update, on_erase, on_clear signal member functions
-	///                  on_update, on_erase provide signal_range_type range,
-	///                  random access of pointers to affected elements,
-	///                  sorted by pointer value
+	/// @Param Container class to which this view will connect and listen updates, described above
 	template <class Container>
 	class view_base
 	{
@@ -81,8 +73,18 @@ namespace viewed
 		typedef typename container_type::view_pointer_type view_pointer_type;
 		static_assert(std::is_pointer_v<view_pointer_type>);
 
-		static view_pointer_type get_view_pointer(const value_type & val)  { return container_type::get_view_pointer(val); }
-		static const_reference   get_view_reference(view_pointer_type ptr) { return container_type::get_view_reference(ptr); }
+		struct get_view_pointer_type
+		{
+			view_pointer_type operator()(const value_type & val) const noexcept { return container_type::get_view_pointer(val); }
+		};
+
+		struct get_view_reference_type
+		{
+			const_reference operator()(view_pointer_type ptr) const noexcept { return container_type::get_view_reference(ptr); }
+		};
+
+		static constexpr get_view_pointer_type   get_view_pointer {};
+		static constexpr get_view_reference_type get_view_reference {};
 
 	protected:
 		typedef typename container_type::signal_range_type   signal_range_type;
@@ -151,13 +153,20 @@ namespace viewed
 		/// default implementation just copies from owner
 		virtual void reinit_view();
 
-		/// normally should not be called outside of view class.
-		/// Provided, when view class used directly without inheritance, to complete initialization.
+		/// Normally should not be called outside of view class.
 		/// Calls connects signals and calls reinit_view.
 		/// 
 		/// Derived views probably will automatically call it constructor
 		/// or directly connect_signals/reinit_view
 		virtual void init();
+
+	protected:
+		/// sorts erased ranges by pointer value, so we can use binary search on them
+		virtual void prepare_erase(const signal_range_type & erased);
+		virtual void prepare_update(
+			const signal_range_type & erased,
+			const signal_range_type & updated,
+			const signal_range_type & inserted);
 
 	protected:
 		/// connects container signals to appropriate handlers
@@ -168,17 +177,19 @@ namespace viewed
 		
 		/// called when new data is updated in owning container
 		/// view have to synchronize itself.
-		/// @Param sorted_newrecs range of pointers to updated records, sorted by pointer value
+		/// @Param sorted_erased range of pointers to erased records, sorted by pointer value
+		/// @Param updated range of pointers to updated records
+		/// @Param inserted range of pointers to inserted
 		/// 
 		/// default implementation removes erased, appends inserted records, and does nothing with sorted_updated
 		virtual void update_data(
 			const signal_range_type & sorted_erased,
-			const signal_range_type & sorted_updated,
+			const signal_range_type & updated,
 			const signal_range_type & inserted);
 
 		/// called when some records are erased from container
 		/// view have to synchronize itself.
-		/// @Param sorted_newrecs range of pointers to updated records, sorted by pointer value
+		/// @Param sorted_erased range of pointers to erased records, sorted by pointer value
 		/// 
 		/// default implementation, erases those records from main store
 		virtual void erase_records(const signal_range_type & sorted_erased);
@@ -208,9 +219,27 @@ namespace viewed
 	template <class Container>
 	void view_base<Container>::connect_signals()
 	{
-		m_clear_con = m_owner->on_clear([this] { clear_view(); });
-		m_update_con = m_owner->on_update([this](const signal_range_type & e, const signal_range_type & u, const signal_range_type & i) { update_data(e, u, i); });
-		m_erase_con = m_owner->on_erase([this](const signal_range_type & r) { erase_records(r); });
+		auto onclear = [this]()
+		{
+			clear_view();
+		};
+
+		auto onupdate = [this](const signal_range_type & e, const signal_range_type & u, const signal_range_type & i)
+		{
+			prepare_update(e, u, i);
+			update_data(e, u, i);
+		};
+
+		auto onerase = [this](const signal_range_type & r)
+		{
+			prepare_erase(r);
+			erase_records(r);
+		};
+
+
+		m_clear_con = m_owner->on_clear(onclear);
+		m_update_con = m_owner->on_update(onupdate);
+		m_erase_con = m_owner->on_erase(onerase);
 	}
 
 	template <class Container>
@@ -228,9 +257,25 @@ namespace viewed
 	}
 
 	template <class Container>
+	void view_base<Container>::prepare_erase(const signal_range_type & erased)
+	{
+		std::sort(erased.begin(), erased.end());
+	}
+
+	template <class Container>
+	void view_base<Container>::prepare_update(
+		const signal_range_type & erased,
+		const signal_range_type & updated,
+		const signal_range_type & inserted)
+	{
+		std::sort(erased.begin(), erased.end());
+	}
+
+
+	template <class Container>
 	void view_base<Container>::update_data(
 		const signal_range_type & sorted_erased,
-		const signal_range_type & sorted_updated,
+		const signal_range_type & updated,
 		const signal_range_type & inserted)
 	{
 		auto first = m_store.begin();
@@ -238,12 +283,8 @@ namespace viewed
 
 		if (not sorted_erased.empty())
 		{
-			auto todel = [&sorted_erased](view_pointer_type rec)
-			{
-				return boost::binary_search(sorted_erased, rec);
-			};
-
-			last = boost::remove_if(m_store, todel);
+			auto pred = [&sorted_erased](view_pointer_type rec) { return boost::binary_search(sorted_erased, rec); };
+			last = boost::remove_if(m_store, pred);
 		}
 
 		auto old_sz = last - first;
@@ -268,11 +309,7 @@ namespace viewed
 	{
 		if (sorted_erased.empty()) return;
 
-		auto todel = [&sorted_erased](view_pointer_type rec)
-		{
-			return boost::binary_search(sorted_erased, rec);
-		};
-
-		boost::remove_erase_if(m_store, todel);
+		auto pred = [&sorted_erased](view_pointer_type rec) { return boost::binary_search(sorted_erased, rec); };
+		boost::remove_erase_if(m_store, pred);
 	}
 }

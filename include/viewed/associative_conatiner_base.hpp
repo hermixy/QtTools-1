@@ -61,14 +61,14 @@ namespace viewed
 		typedef implementation-defined scoped_connection;
 
 		/// signal is emitted in process of updating data in container(after update/insert, before erase) with 3 ranges of pointers.
-		///  * 1st to erased elements, sorted by pointer value
-		///  * 2nd points to elements that were updated, sorted by pointer value
+		///  * 1st to erased elements
+		///  * 2nd points to elements that were updated
 		///  * 3rd to newly inserted, order is unspecified
-		///  signature: void(signal_range_type sorted_erased, signal_range_type sorted_updated, signal_range_type inserted)
+		///  signature: void(signal_range_type erased, signal_range_type updated, signal_range_type inserted)
 		typedef implementation-defined update_signal_type;
 
 		/// signal is emitted before data is erased from container,
-		/// with range of pointers to elements to erase, sorted by pointer value
+		/// with range of pointers to elements to erase
 		/// signature: void(signal_range_type erased),
 		typedef implementation-defined erase_signal_type;
 
@@ -249,7 +249,6 @@ namespace viewed
 			}
 		}
 
-		std::sort(updated.begin(), updated.end());
 		notify_views(erased, updated, inserted);
 	}
 
@@ -295,7 +294,6 @@ namespace viewed
 
 		erased_last = std::remove_if(erased_first, erased_last, [](auto ptr) { return marked_pointer(ptr); });
 		erased.erase(erased_last, erased.end());
-		std::sort(updated.begin(), updated.end());
 		notify_views(erased, updated, inserted);
 
 		for (auto * ptr : erased) m_store.erase(*ptr);
@@ -306,7 +304,6 @@ namespace viewed
 	{
 		signal_store_type todel;
 		std::transform(first, last, std::back_inserter(todel), traits_type::get_pointer);
-		std::sort(todel.begin(), todel.end());
 
 		auto rawRange = signal_traits::make_range(todel.data(), todel.data() + todel.size());
 		m_erase_signal(rawRange);

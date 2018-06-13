@@ -61,8 +61,8 @@ namespace viewed
 		static auto make_internal(const Type * ptr)        { return internal_value_type(ptr); }
 		static auto make_internal(internal_value_type ptr) { return std::move(val); }
 
-		static decltype(auto) value_reference(const internal_value_type & val) { return val.get(); }
-		static decltype(auto) value_reference(      internal_value_type & val) { return val.get(); }
+		static auto value_reference(const internal_value_type & val) { return val.get(); }
+		static auto value_reference(      internal_value_type & val) { return val.get(); }
 
 		static auto value_pointer(const internal_value_type & val) { return val.get(); }
 		static auto value_pointer(      internal_value_type & val) { return val.get(); }
@@ -87,14 +87,14 @@ namespace viewed
 		typedef implementation-defined scoped_connection;
 
 		/// signal is emitted in process of updating data in container(after update/insert, before erase) with 3 ranges of pointers.
-		///  * 1st to erased elements, sorted by pointer value
-		///  * 2nd points to elements that were updated, sorted by pointer value
+		///  * 1st to erased elements
+		///  * 2nd points to elements that were updated
 		///  * 3rd to newly inserted, order is unspecified
-		///  signature: void(signal_range_type sorted_erased, signal_range_type sorted_updated, signal_range_type inserted)
+		///  signature: void(signal_range_type erased, signal_range_type updated, signal_range_type inserted)
 		typedef implementation-defined update_signal_type;
 
 		/// signal is emitted before data is erased from container,
-		/// with range of pointers to elements to erase, sorted by pointer value
+		/// with range of pointers to elements to erase
 		/// signature: void(signal_range_type erased),
 		typedef implementation-defined erase_signal_type;
 
@@ -337,7 +337,6 @@ namespace viewed
 		auto erased_first = erased.begin();
 		auto erased_last = erased.end();
 		std::transform(m_store.begin(), m_store.end(), erased_first, get_pointer);
-		std::sort(erased_first, erased_last);
 
 		for (; first != last; ++first)
 		{
@@ -354,7 +353,6 @@ namespace viewed
 	{
 		signal_store_type todel;
 		std::transform(first, last, std::back_inserter(todel), get_pointer);
-		std::sort(todel.begin(), todel.end());
 
 		auto rawRange = signal_traits::make_range(todel.data(), todel.data() + todel.size());
 		m_erase_signal(rawRange);

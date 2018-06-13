@@ -59,23 +59,32 @@ namespace viewed
 		virtual void change_indexes(int_vector::const_iterator first, int_vector::const_iterator last, int offset);
 
 	protected:
+		/// sorts erased and updated ranges by pointer value, so we can use binary search on them
+		void prepare_update(
+			const signal_range_type & erased,
+			const signal_range_type & updated,
+			const signal_range_type & inserted);
+
+	protected:
 		/// container event handlers, those are called on container signals,
 		/// you could reimplement them to provide proper handling of your view
 		
 		/// called when new data is updated in owning container
 		/// view have to synchronize itself.
-		/// @Param sorted_newrecs range of pointers to updated records, sorted by pointer value
+		/// @Param sorted_erased range of pointers to erased records, sorted by pointer value
+		/// @Param sorted_updated range of pointers to updated records, sorted by pointer value
+		/// @Param inserted range of pointers to inserted
 		/// 
-		/// default implementation removes erased, appends inserted records, and does nothing with sorted_updated
+		/// default implementation removes erased, appends inserted records, and emits dataChanged for updated ones
 		/// emits qt beginInsertRows/endInsertRows
 		virtual void update_data(
 			const signal_range_type & sorted_erased,
-			const signal_range_type & sorted_updated,
+			const signal_range_type & updated,
 			const signal_range_type & inserted) override;
 
 		/// called when some records are erased from container
 		/// view have to synchronize itself.
-		/// @Param sorted_newrecs range of pointers to updated records, sorted by pointer value
+		/// @Param sorted_erased range of pointers to erased records, sorted by pointer value
 		/// 
 		/// default implementation, erases those records from main store
 		/// calls qt layoutAboutToBeChanged/layoutChanged
@@ -161,6 +170,16 @@ namespace viewed
 		model->beginResetModel();
 		base_type::reinit_view();
 		model->endResetModel();
+	}
+
+	template <class Container>
+	void view_qtbase<Container>::prepare_update(
+		const signal_range_type & erased,
+		const signal_range_type & updated,
+		const signal_range_type & inserted)
+	{
+		std::sort(erased.begin(), erased.end());
+		std::sort(updated.begin(), updated.end());
 	}
 
 	template <class Container>
