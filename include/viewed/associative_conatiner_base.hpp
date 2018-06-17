@@ -292,7 +292,7 @@ namespace viewed
 			}
 		}
 
-		erased_last = std::remove_if(erased_first, erased_last, [](auto ptr) { return marked_pointer(ptr); });
+		erased_last = std::remove_if(erased_first, erased_last, viewed::marked_pointer);
 		erased.erase(erased_last, erased.end());
 		notify_views(erased, updated, inserted);
 

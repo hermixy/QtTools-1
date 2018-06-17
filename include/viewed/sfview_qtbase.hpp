@@ -20,22 +20,6 @@
 
 namespace viewed
 {
-	struct null_sorter
-	{
-		template <class Type>
-		bool operator()(const Type & v1, const Type & v2) const noexcept { return &v1 < &v2; }
-		
-		explicit operator bool() const noexcept { return false; }
-	};
-
-	struct null_filter
-	{
-		template <class Type>
-		bool operator()(const Type & v) const noexcept { return true; }
-		
-		explicit operator bool() const noexcept { return false; }
-	};
-
 	/// see also view_qtbase description for more information
 	/// 
 	/// sfview_qtbase is sorted and filtered based on provided SortPred, FilterPred.
@@ -287,16 +271,18 @@ namespace viewed
 
 		int_vector index_array, affected_indexes;
 		int_vector::iterator removed_first, removed_last, changed_first, changed_last;
-		store_iterator middle = first_updated;
 		std::size_t middle_sz = first_updated - first;
 		bool order_changed = false;
+
+		auto middle = first_updated;
+		auto last_updated = first_inserted;
+		auto last_inserted = last;
 		
 		affected_indexes.resize(first_inserted - first_updated + last_erased - first_erased);
 		removed_first = removed_last = affected_indexes.begin();
 		changed_first = changed_last = affected_indexes.end();
 
-
-		if (first_updated == first_inserted)
+		if (first_updated == last_updated)
 		{
 			// if there erased ones - erase them from the store
 			for (auto it = first; it != middle; ++it)
@@ -305,20 +291,10 @@ namespace viewed
 					*removed_last++ = static_cast<int>(it - first);
 			}
 
-			middle = viewed::remove_indexes(first, middle, removed_first, removed_last);
-			middle_sz = middle - first;
-
-			if (active(m_filter_pred))
-			{
-				last = std::remove_if(first_inserted, last, not_fpred);
-				m_store.resize(last - first);
-			}
+			last = middle = viewed::remove_indexes(first, middle, removed_first, removed_last);
 		}
 		else // there are updates
 		{
-			auto last_updated = first_inserted;
-			auto last_inserted = last;
-
 			for (auto it = first; it != middle; ++it)
 			{
 				auto ptr = *it;
@@ -330,7 +306,7 @@ namespace viewed
 					if (found == last_updated) continue;
 					if (ptr != *found) continue;
 
-					*found = mark_pointer(*found);
+					*found = viewed::mark_pointer(*found);
 					int row = static_cast<int>(it - first);
 					bool passes = not active(m_filter_pred) or m_filter_pred(*ptr);
 
@@ -345,16 +321,19 @@ namespace viewed
 			
 			middle = viewed::remove_indexes(first, middle, removed_first, removed_last);
 			last = std::copy_if(first_updated, last_updated, middle,
-			                    [fpred](auto ptr) { return not marked_pointer(ptr) and fpred(ptr); });
-			
-			if (active(m_filter_pred))
-				last = std::copy_if(first_inserted, last_inserted, last, fpred);
-			else
-				last = std::copy(first_inserted, last_inserted, last);
-			
-			middle_sz = middle - first;
-			m_store.resize(last - first);
+			                    [fpred](auto ptr) { return not viewed::marked_pointer(ptr) and fpred(ptr); });
 		}
+
+		// copy filter new elements
+		if (active(m_filter_pred))
+			last = std::copy_if(first_inserted, last_inserted, last, fpred);
+		else
+			last = std::copy(first_inserted, last_inserted, last);
+
+		// and resize m_store
+		middle_sz = middle - first;
+		m_store.resize(last - first);
+
 
 		auto * model = get_model();
 		Q_EMIT model->layoutAboutToBeChanged(model_type::empty_model_list, model->NoLayoutChangeHint);
@@ -371,7 +350,7 @@ namespace viewed
 
 		std::iota(ifirst, ilast, offset);
 		ilast = viewed::remove_indexes(ifirst, ilast, removed_first, removed_last);
-		ilast = std::transform(removed_first, removed_last, ilast, [](int val) { return mark_index(val); });
+		ilast = std::transform(removed_first, removed_last, ilast, viewed::mark_index);
 
 		merge_newdata(
 			first, middle, last,

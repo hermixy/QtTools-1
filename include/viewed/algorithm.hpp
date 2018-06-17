@@ -21,28 +21,41 @@ namespace viewed
 		return varalgo::variant_traits<std::decay_t<Pred>>::visit(vis, std::forward<Pred>(pred));
 	}
 
-	template <class Type>
-	constexpr inline Type mark_pointer(Type ptr) noexcept
+	struct mark_pointer_type
 	{
-		static_assert(std::is_pointer_v<Type>);
-		reinterpret_cast<std::uintptr_t &>(ptr) |= 1;
-		return ptr;
-	}
+		template <class Type>
+		constexpr Type operator()(Type ptr) const noexcept
+		{
+			static_assert(std::is_pointer_v<Type>);
+			reinterpret_cast<std::uintptr_t &>(ptr) |= 1;
+			return ptr;
+		}
+	};
 
-	template <class Type>
-	constexpr inline Type unmark_pointer(Type ptr) noexcept
+	struct unmark_pointer_type
 	{
-		static_assert(std::is_pointer_v<Type>);
-		reinterpret_cast<std::uintptr_t &>(ptr) &= ~(std::uintptr_t)1;
-		return ptr;
-	}
+		template <class Type>
+		constexpr Type operator()(Type ptr) const noexcept
+		{
+			static_assert(std::is_pointer_v<Type>);
+			reinterpret_cast<std::uintptr_t &>(ptr) &= ~(std::uintptr_t)1;
+			return ptr;
+		}
+	};
 
-	template <class Type>
-	constexpr inline bool marked_pointer(Type ptr) noexcept
+	struct marked_pointer_type
 	{
-		static_assert(std::is_pointer_v<Type>);
-		return reinterpret_cast<std::uintptr_t>(ptr) & 1;
-	}
+		template <class Type>
+		constexpr bool operator()(Type ptr) const noexcept
+		{
+			static_assert(std::is_pointer_v<Type>);
+			return reinterpret_cast<std::uintptr_t>(ptr) & 1;
+		}
+	};
+
+	constexpr mark_pointer_type mark_pointer {};
+	constexpr unmark_pointer_type unmark_pointer {};
+	constexpr marked_pointer_type marked_pointer {};
 
 	namespace detail
 	{
@@ -51,20 +64,53 @@ namespace viewed
 		static_assert(INDEX_MARK_MASK == INT_MIN, "some very unusual architecture here");
 	}
 
-	constexpr inline int mark_index(int idx) noexcept
-	{
-		return idx |= detail::INDEX_MARK_MASK;
-	}
 
-	constexpr inline int unmark_index(int idx) noexcept
+	struct mark_index_type
 	{
-		return idx &= detail::INDEX_UNMARK_MASK;
-	}
+		constexpr int operator()(int idx) const noexcept
+		{
+			return idx |= detail::INDEX_MARK_MASK;
+		}
+	};
 
-	constexpr inline bool marked_index(int idx) noexcept
+	struct unmark_index_type
 	{
-		return idx & detail::INDEX_MARK_MASK;
-	}
+		constexpr int operator()(int idx) const noexcept
+		{
+			return idx &= detail::INDEX_UNMARK_MASK;
+		}
+	};
+
+	struct marked_index_type
+	{
+		constexpr bool operator()(int idx) const noexcept
+		{
+			return idx & detail::INDEX_MARK_MASK;
+		}
+	};
+
+	constexpr mark_index_type mark_index {};
+	constexpr unmark_index_type unmark_index {};
+	constexpr marked_index_type marked_index {};
+
+
+	struct null_sorter
+	{
+		template <class Type>
+		bool operator()(const Type & v1, const Type & v2) const noexcept { return &v1 < &v2; }
+
+		explicit operator bool() const noexcept { return false; }
+	};
+
+	struct null_filter
+	{
+		template <class Type>
+		bool operator()(const Type & v) const noexcept { return true; }
+
+		explicit operator bool() const noexcept { return false; }
+	};
+
+
 
 	/// inverses index array in following way:
 	/// inverse[arr[i] - offset] = i for first..last.
