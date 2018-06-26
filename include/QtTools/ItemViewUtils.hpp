@@ -6,6 +6,7 @@ QT_BEGIN_NAMESPACE
 class QWidget;
 class QHeaderView;
 class QTableView;
+class QTreeView;
 class QLayout;
 QT_END_NAMESPACE
 
@@ -47,7 +48,11 @@ namespace QtTools
 	QSize TableSizeHint(const QTableView * view, const QSize & minimum, const QSize & maximum,
 	                    bool forceSB = false);
 
-	/// вычисляет дпополнительно место занимаемое layout'ом.
+	/// вычисляет дополнительное место занимаемое layout'ом.
 	/// на данный момент это contentsMargins
 	QSize LayoutAdditionalSize(const QLayout * layout);
+
+	/// вычисляет и меняет размер колонок под содержимое
+	void ResizeColumnsToContents(QTableView * tableView);
+	void ResizeColumnsToContents(QTreeView * treeView);
 }

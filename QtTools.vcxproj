@@ -59,7 +59,7 @@
     <ClCompile Include="src\HeaderConfigurationWidget.cpp" />
     <ClCompile Include="src\MdiModel.cpp" />
     <ClCompile Include="src\qt_model.cpp" />
-    <ClCompile Include="src\TableViewUtils.cpp" />
+    <ClCompile Include="src\ItemViewUtils.cpp" />
     <ClCompile Include="src\ToolsBase.cpp" />
     <ClCompile Include="src\StandardItemModel.cpp" />
     <ClCompile Include="src\ListModel.cpp" />
@@ -83,7 +83,7 @@
     <ClInclude Include="include\QtTools\DrawText.hpp" />
     <ClInclude Include="include\QtTools\ExceptionError.hpp" />
     <ClInclude Include="include\QtTools\HeaderControlModel.hqt" />
-    <ClInclude Include="include\QtTools\TableViewUtils.hpp" />
+    <ClInclude Include="include\QtTools\ItemViewUtils.hpp" />
     <ClInclude Include="include\QtTools\ToggleChecked.hpp" />
     <ClInclude Include="include\QtTools\Delegates\Utils.hpp" />
     <ClInclude Include="include\QtTools\Delegates\CheckBoxDelegate.hpp" />

@@ -1,8 +1,12 @@
 #include <QtWidgets/QHeaderView>
 #include <QtWidgets/QTableView>
+#include <QtWidgets/QTreeView>
 #include <QtWidgets/QLayout>
 #include <QtWidgets/QScrollBar>
-#include <QtTools/TableViewUtils.hpp>
+#include <QtWidgets/QApplication>
+#include <QtWidgets/QDesktopWidget>
+#include <QtTools/ItemViewUtils.hpp>
+
 
 namespace QtTools
 {
@@ -165,5 +169,55 @@ namespace QtTools
 			m.left() + m.right(),
 			m.top() + m.bottom()
 		};
+	}
+
+
+	void ResizeColumnsToContents(QTreeView * treeView)
+	{
+		QApplication::setOverrideCursor(Qt::WaitCursor);
+
+		auto * header = treeView->header();
+		int count = header->count();
+
+		for (int i = 0; i < count; ++i)
+		{
+			auto li = header->logicalIndex(i);
+
+			// for some unknown reason virtual method sizeHintForColumn is declared as protected in QTableView,
+			// through it's public QAbstractItemView. call through base class
+			if (not header->isSectionHidden(li))
+			{
+				auto hint = static_cast<QAbstractItemView *>(treeView)->sizeHintForColumn(li);
+				auto headerHint = header->sectionSizeHint(li);
+				header->resizeSection(i, std::max(hint, headerHint));
+			}
+		}
+
+		QApplication::restoreOverrideCursor();
+	}
+
+	void ResizeColumnsToContents(QTableView * tableView)
+	{
+		QApplication::setOverrideCursor(Qt::WaitCursor);
+
+		// what we need is done by resizeColumnsToContents,
+		// but it's also takes into account headers, and i want without them - have to do by hand
+		auto * header = tableView->horizontalHeader();
+		auto minimum = header->minimumSectionSize();
+		int count = header->count();
+
+		for (int i = 0; i < count; ++i)
+		{
+			auto li = header->logicalIndex(i);
+			if (not header->isSectionHidden(i))
+			{
+				// for some unknown reason virtual method sizeHintForColumn is declared as protected in QTableView,
+				// through it's public QAbstractItemView. call through base class
+				auto hint = static_cast<QAbstractItemView *>(tableView)->sizeHintForColumn(li);
+				header->resizeSection(li, std::max(hint, minimum));
+			}
+		}
+
+		QApplication::restoreOverrideCursor();
 	}
 }
