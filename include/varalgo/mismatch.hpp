@@ -2,7 +2,9 @@
 
 #include <algorithm>
 
+
 #include <boost/range.hpp>
+#include <boost/range/detail/range_return.hpp>
 #include <boost/algorithm/cxx14/mismatch.hpp>
 #include <boost/variant/variant.hpp>
 #include <boost/variant/static_visitor.hpp>

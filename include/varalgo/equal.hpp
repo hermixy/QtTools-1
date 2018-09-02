@@ -1,7 +1,9 @@
 #pragma once
 #include <algorithm>
 #include <varalgo/std_variant_traits.hpp>
+
 #include <boost/range.hpp>
+#include <boost/range/detail/range_return.hpp>
 
 namespace varalgo
 {

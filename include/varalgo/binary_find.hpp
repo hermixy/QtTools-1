@@ -1,7 +1,9 @@
 #pragma once
 #include <algorithm>
 #include <ext/algorithm/binary_find.hpp>
+
 #include <boost/range.hpp>
+#include <boost/range/detail/range_return.hpp>
 
 namespace varalgo
 {
