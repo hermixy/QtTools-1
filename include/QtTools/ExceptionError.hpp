@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 #include <system_error>
 #include <boost/system/system_error.hpp>
 
@@ -25,13 +25,13 @@ namespace QtTools
 
 namespace std
 {
-	inline std::error_code make_error_code(QtTools::ExceptionError ev)
+	inline error_code make_error_code(QtTools::ExceptionError ev)
 	{
 		return std::error_code(static_cast<int>(ev), QtTools::exception_category());
 	}
 
 	template <>
-	class std::is_error_code_enum<QtTools::ExceptionError> :
+	class is_error_code_enum<QtTools::ExceptionError> :
 		public std::true_type {};
 }
 
@@ -44,6 +44,6 @@ namespace system
 	}
 
 	template <>
-	class boost::system::is_error_code_enum<QtTools::ExceptionError> :
+	class is_error_code_enum<QtTools::ExceptionError> :
 		public std::true_type {};
 }}

@@ -29,7 +29,7 @@ namespace QtTools
 	void ToggleChecked(IndexList & indxes, int checkedCount)
 	{
 		auto sz = indxes.size();
-		bool checked = checkedCount == 0 || checkedCount != sz && checkedCount >= sz / 2;
+		bool checked = checkedCount == 0 || (checkedCount != sz && checkedCount >= sz / 2);
 
 		typedef typename IndexList::value_type value_type;
 		for (value_type & idx : indxes)

@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 #include <algorithm>
 #include <varalgo/std_variant_traits.hpp>
 
@@ -14,6 +14,8 @@ namespace varalgo
 		{
 			return std::is_sorted(first, last, std::forward<decltype(pred)>(pred));
 		};
+
+		return variant_traits<std::decay_t<Pred>>::visit(std::move(alg), std::forward<Pred>(pred));
 	}
 
 	template <class ForwardRange, class Pred>

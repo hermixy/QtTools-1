@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 #include <QtCore/QScopedPointer>
 #include <QtCore/QString>
 #include <QtCore/QHash>
@@ -390,8 +390,8 @@ namespace QtTools
 			m_headerView->setSectionHidden(it->logicalIndex, hidden);
 
 		int pos = IndexFromIt(it);
-		auto idx = index(pos);
-		Q_EMIT dataChanged(idx, idx, {Qt::CheckStateRole});
+		auto idx = this->index(pos);
+		Q_EMIT this->dataChanged(idx, idx, {Qt::CheckStateRole});
 	}
 
 	template <class SectionInfoTraits, class BaseModel>
@@ -408,8 +408,8 @@ namespace QtTools
 			m_headerView->resizeSection(it->logicalIndex, newWidth);
 
 		int pos = IndexFromIt(it);
-		auto idx = index(pos);
-		Q_EMIT dataChanged(idx, idx);
+		auto idx = this->index(pos);
+		Q_EMIT this->dataChanged(idx, idx);
 	}
 
 	template <class SectionInfoTraits, class BaseModel>
@@ -430,7 +430,7 @@ namespace QtTools
 	template <class SectionInfoTraits, class BaseModel>
 	bool BasicHeaderControlModel<SectionInfoTraits, BaseModel>::MoveInternalRows(int sourceRow, int count, int destinationChild)
 	{
-		bool allowed = beginMoveRows({}, sourceRow, sourceRow + count - 1, {}, destinationChild);
+		bool allowed = this->beginMoveRows({}, sourceRow, sourceRow + count - 1, {}, destinationChild);
 		if (!allowed) return false;
 
 		auto first = m_sectionContainer.begin() + sourceRow;
@@ -438,7 +438,7 @@ namespace QtTools
 		auto dest = m_sectionContainer.begin() + destinationChild;
 		m_sectionContainer.relocate(dest, first, last);
 
-		endMoveRows();
+		this->endMoveRows();
 		return true;
 	}
 
@@ -503,8 +503,8 @@ namespace QtTools
 		if (inserted)
 		{
 			int pos = IndexFromIt(seqit);
-			beginInsertRows({}, pos, pos);
-			endInsertRows();
+			this->beginInsertRows({}, pos, pos);
+			this->endInsertRows();
 		}
 		else
 		{
@@ -763,17 +763,17 @@ namespace QtTools
 			{
 				// заменить удалось, имя изменилось на какое-то, которое нам еще не известно
 				int idx = seqit - first;
-				auto modelIndex = index(idx);
-				Q_EMIT dataChanged(modelIndex, modelIndex);
+				auto modelIndex = this->index(idx);
+				Q_EMIT this->dataChanged(modelIndex, modelIndex);
 			}
 			else
 			{
 				// заменить не удалось, имя изменилось на какое-то, которое нам уже известно
 				// удаляем старый элемент
 				int row = seqit - first;
-				beginRemoveRows({}, row, row);
+				this->beginRemoveRows({}, row, row);
 				m_sectionContainer.erase(seqit);
-				endRemoveRows();
+				this->endRemoveRows();
 				// устанавливаем секцию и синхронизируем View
 				AssignSection(std::move(info));
 			}
@@ -786,14 +786,14 @@ namespace QtTools
 	template <class SectionInfoTraits, class BaseModel>
 	void BasicHeaderControlModel<SectionInfoTraits, BaseModel>::ConnectHeader()
 	{
-		connect(m_headerView, &QHeaderView::sectionMoved,
-				this, static_cast<void (self_type::*)(int, int, int)>(&self_type::OnSectionMoved));
-		connect(m_headerView, &QHeaderView::sectionResized,
-				this, static_cast<void (self_type::*)(int, int, int)>(&self_type::OnSectionSizeChanged));
+		this->connect(m_headerView, &QHeaderView::sectionMoved,
+		              this, static_cast<void (self_type::*)(int, int, int)>(&self_type::OnSectionMoved));
+		this->connect(m_headerView, &QHeaderView::sectionResized,
+		              this, static_cast<void (self_type::*)(int, int, int)>(&self_type::OnSectionSizeChanged));
 
-		connect(m_headerModel, &QAbstractItemModel::columnsInserted,   this, &self_type::OnColumnsInserted);
-		connect(m_headerModel, &QAbstractItemModel::columnsRemoved,    this, &self_type::OnColumnsRemoved);
-		connect(m_headerModel, &QAbstractItemModel::headerDataChanged, this, &self_type::OnHeaderDataChanged);
+		this->connect(m_headerModel, &QAbstractItemModel::columnsInserted,   this, &self_type::OnColumnsInserted);
+		this->connect(m_headerModel, &QAbstractItemModel::columnsRemoved,    this, &self_type::OnColumnsRemoved);
+		this->connect(m_headerModel, &QAbstractItemModel::headerDataChanged, this, &self_type::OnHeaderDataChanged);
 	}
 
 	template <class SectionInfoTraits, class BaseModel>
@@ -920,7 +920,7 @@ namespace QtTools
 	template <class SectionsRange>
 	void BasicHeaderControlModel<SectionInfoTraits, BaseModel>::Configurate(SectionsRange && sections)
 	{
-		beginResetModel();
+		this->beginResetModel();
 
 		auto & codeview = m_sectionContainer.template get<ByCode>();
 
@@ -943,7 +943,7 @@ namespace QtTools
 			++pos;
 		}
 
-		endResetModel();
+		this->endResetModel();
 	}
 
 	template <class SectionInfoTraits, class BaseModel>
@@ -954,7 +954,7 @@ namespace QtTools
 
 		for (const auto & info : seqview)
 		{
-			if (info.logicalIndex == notpresent)
+			if (info.logicalIndex == section_info::notpresent)
 				continue;
 			else if (info.logicalIndex != curIdx++)
 				return false;
@@ -979,13 +979,13 @@ namespace QtTools
 	{
 		if (m_headerView == nullptr)
 		{
-			beginResetModel();
+			this->beginResetModel();
 			m_sectionContainer.clear();
-			endResetModel();
+			this->endResetModel();
 		}
 		else
 		{
-			beginResetModel();
+			this->beginResetModel();
 			if (m_headerView)
 			{
 				m_headerView->reset();
@@ -997,14 +997,14 @@ namespace QtTools
 					m_headerView->moveSection(oldVi, i);
 				}
 			}
-			endResetModel();
+			this->endResetModel();
 		}
 	}
 
 	template <class SectionInfoTraits, class BaseModel>
 	void BasicHeaderControlModel<SectionInfoTraits, BaseModel>::EraseNonPresent()
 	{
-		beginResetModel();
+		this->beginResetModel();
 		for (auto it = m_sectionContainer.begin(); it != m_sectionContainer.end(); )
 		{
 			if (!IsPresent(*it))
@@ -1012,6 +1012,6 @@ namespace QtTools
 			else
 				++it;
 		}
-		endResetModel();
+		this->endResetModel();
 	}
 }

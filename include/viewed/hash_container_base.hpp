@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 #include <vector>
 #include <viewed/associative_conatiner_base.hpp>
 
@@ -124,7 +124,7 @@ namespace viewed
 		
 	public:
 		hash_container_base(hasher hash = {}, key_equal eq = {})
-			: base_type(base_type::traits_type(), std::move(hash), std::move(eq))
+		    : base_type(typename base_type::traits_type {}, std::move(hash), std::move(eq))
 		{ }
 
 		hash_container_base(traits_type traits, hasher hash, key_equal eq)

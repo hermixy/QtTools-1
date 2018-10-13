@@ -1,4 +1,4 @@
-#include <vector>
+п»ї#include <vector>
 #include <QtTools/ListModel.hqt>
 
 namespace QtTools
@@ -22,9 +22,9 @@ namespace QtTools
 		auto defFlags = QAbstractListModel::flags(index);
 		defFlags |= Qt::ItemIsEditable /* | Qt::ItemNeverHasChildren*/;
 
-		// не валидный индекс - это позиция между строками
-		// ее делаем ItemIsDropEnabled что бы можно было скидывать
-		// валидные же индексы только ItemIsDragEnabled
+		// РЅРµ РІР°Р»РёРґРЅС‹Р№ РёРЅРґРµРєСЃ - СЌС‚Рѕ РїРѕР·РёС†РёСЏ РјРµР¶РґСѓ СЃС‚СЂРѕРєР°РјРё
+		// РµРµ РґРµР»Р°РµРј ItemIsDropEnabled С‡С‚Рѕ Р±С‹ РјРѕР¶РЅРѕ Р±С‹Р»Рѕ СЃРєРёРґС‹РІР°С‚СЊ
+		// РІР°Р»РёРґРЅС‹Рµ Р¶Рµ РёРЅРґРµРєСЃС‹ С‚РѕР»СЊРєРѕ ItemIsDragEnabled
 		defFlags |= index.isValid() ? Qt::ItemIsDragEnabled : Qt::ItemIsDropEnabled;
 		return defFlags;
 	}
@@ -52,7 +52,7 @@ namespace QtTools
 	bool ListModelBase::canDropMimeData(const QMimeData * data, Qt::DropAction action,
 										int row, int column, const QModelIndex & parent) const
 	{
-		return (action == Qt::CopyAction || Qt::MoveAction)
+		return (action == Qt::CopyAction || action == Qt::MoveAction)
 			&& qobject_cast<const ListModel_MimeData *>(data);
 	}
 
@@ -74,12 +74,12 @@ namespace QtTools
 		std::sort(first, last);
 
 
-		// в нашем случае parent всегда invalid, поскольку мы не TreeModel
-		// если row >= 0 - row указывает что скидывание произошло строго перед элементом с индексом row, для заданного parent'а
-		// если же row == -1 мы:
-		//  * или скидываем на элемент и тогда parent его идентифицирует,
-		//     в нашем случае невозможно, поскольку мы запретили это методом flags
-		//  * или скидываем после последнего элемента
+		// РІ РЅР°С€РµРј СЃР»СѓС‡Р°Рµ parent РІСЃРµРіРґР° invalid, РїРѕСЃРєРѕР»СЊРєСѓ РјС‹ РЅРµ TreeModel
+		// РµСЃР»Рё row >= 0 - row СѓРєР°Р·С‹РІР°РµС‚ С‡С‚Рѕ СЃРєРёРґС‹РІР°РЅРёРµ РїСЂРѕРёР·РѕС€Р»Рѕ СЃС‚СЂРѕРіРѕ РїРµСЂРµРґ СЌР»РµРјРµРЅС‚РѕРј СЃ РёРЅРґРµРєСЃРѕРј row, РґР»СЏ Р·Р°РґР°РЅРЅРѕРіРѕ parent'Р°
+		// РµСЃР»Рё Р¶Рµ row == -1 РјС‹:
+		//  * РёР»Рё СЃРєРёРґС‹РІР°РµРј РЅР° СЌР»РµРјРµРЅС‚ Рё С‚РѕРіРґР° parent РµРіРѕ РёРґРµРЅС‚РёС„РёС†РёСЂСѓРµС‚,
+		//     РІ РЅР°С€РµРј СЃР»СѓС‡Р°Рµ РЅРµРІРѕР·РјРѕР¶РЅРѕ, РїРѕСЃРєРѕР»СЊРєСѓ РјС‹ Р·Р°РїСЂРµС‚РёР»Рё СЌС‚Рѕ РјРµС‚РѕРґРѕРј flags
+		//  * РёР»Рё СЃРєРёРґС‹РІР°РµРј РїРѕСЃР»Рµ РїРѕСЃР»РµРґРЅРµРіРѕ СЌР»РµРјРµРЅС‚Р°
 		
 		bool onto;
 

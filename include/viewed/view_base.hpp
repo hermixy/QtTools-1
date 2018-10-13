@@ -1,8 +1,9 @@
-#pragma once
+﻿#pragma once
 #include <vector>
 #include <ext/range/range_traits.hpp>
 
 #include <boost/iterator/iterator_adaptor.hpp>
+#include <boost/range/algorithm.hpp>
 #include <boost/range/algorithm_ext.hpp>
 #include <boost/range/adaptor/transformed.hpp>
 

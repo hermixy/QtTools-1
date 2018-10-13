@@ -1,6 +1,6 @@
-#pragma once
+﻿#pragma once
 #include <QtCore/QVector>
-#include <QtGUi/QTextLayout>
+#include <QtGui/QTextLayout>
 #include <QtWidgets/QStyleOption>
 #include <QtTools/Delegates/Utils.hpp>
 

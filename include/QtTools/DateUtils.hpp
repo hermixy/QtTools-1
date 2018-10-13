@@ -1,6 +1,8 @@
-#pragma once
+﻿#pragma once
+#include <cmath>
 #include <type_traits>
 #include <chrono>
+
 #include <boost/chrono.hpp>
 #include <QtCore/QDateTime>
 

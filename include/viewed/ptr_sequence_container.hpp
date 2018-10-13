@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 #include <algorithm>
 #include <iterator> // for back_inserter
 #include <boost/iterator/iterator_adaptor.hpp>
@@ -59,7 +59,7 @@ namespace viewed
 
 		static main_store_type make_store()                { return {}; }
 		static auto make_internal(const Type * ptr)        { return internal_value_type(ptr); }
-		static auto make_internal(internal_value_type ptr) { return std::move(val); }
+		static auto make_internal(internal_value_type ptr) { return std::move(ptr); }
 
 		static auto value_reference(const internal_value_type & val) { return val.get(); }
 		static auto value_reference(      internal_value_type & val) { return val.get(); }

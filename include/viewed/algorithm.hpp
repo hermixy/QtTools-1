@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 #include <cstddef>
 #include <cstdint>
 #include <type_traits>
@@ -6,6 +6,8 @@
 #include <algorithm>
 #include <numeric>
 #include <ext/type_traits.hpp>
+
+#include <varalgo/std_variant_traits.hpp>
 
 namespace viewed
 {
@@ -27,8 +29,8 @@ namespace viewed
 		constexpr Type operator()(Type ptr) const noexcept
 		{
 			static_assert(std::is_pointer_v<Type>);
-			reinterpret_cast<std::uintptr_t &>(ptr) |= 1;
-			return ptr;
+			auto ptr_val = reinterpret_cast<std::uintptr_t>(ptr) | 1;
+			return reinterpret_cast<Type>(ptr_val);
 		}
 	};
 
@@ -38,8 +40,8 @@ namespace viewed
 		constexpr Type operator()(Type ptr) const noexcept
 		{
 			static_assert(std::is_pointer_v<Type>);
-			reinterpret_cast<std::uintptr_t &>(ptr) &= ~(std::uintptr_t)1;
-			return ptr;
+			auto ptr_val = reinterpret_cast<std::uintptr_t>(ptr) & ~static_cast<std::uintptr_t>(1);
+			return reinterpret_cast<Type>(ptr_val);
 		}
 	};
 
@@ -53,7 +55,7 @@ namespace viewed
 		}
 	};
 
-	constexpr mark_pointer_type mark_pointer {};
+	constexpr mark_pointer_type   mark_pointer {};
 	constexpr unmark_pointer_type unmark_pointer {};
 	constexpr marked_pointer_type marked_pointer {};
 
@@ -89,7 +91,7 @@ namespace viewed
 		}
 	};
 
-	constexpr mark_index_type mark_index {};
+	constexpr mark_index_type   mark_index {};
 	constexpr unmark_index_type unmark_index {};
 	constexpr marked_index_type marked_index {};
 

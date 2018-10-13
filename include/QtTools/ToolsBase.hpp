@@ -1,8 +1,11 @@
-#pragma once
+﻿#pragma once
 #include <QtCore/QString>
 #include <QtCore/QDateTime>
 #include <QtCore/QHash>
 #include <QtCore/QMetaType>
+
+#include <QtCore/QObject>
+#include <QtWidgets/QWidget>
 
 #include <string>
 #include <codecvt>
@@ -17,6 +20,7 @@ Q_DECLARE_METATYPE(std::string)
 
 static_assert(std::is_same_v<QString::iterator, QChar *>);
 static_assert(std::is_same_v<QString::const_iterator, const QChar *>);
+static_assert(sizeof(ushort) == sizeof(char16_t) and alignof(ushort) == alignof(char16_t));
 
 template <>
 inline void ext::assign<QString, const char16_t * >(QString & str, const char16_t * first, const char16_t * last)
@@ -91,6 +95,52 @@ namespace std
 		{
 			return qHash(str);
 		}
+
+		std::size_t operator()(const QStringRef & str) const noexcept
+		{
+			return qHash(str);
+		}
+	};
+
+	template <>
+	struct hash<QStringRef>
+	{
+		std::size_t operator()(const QString & str) const noexcept
+		{
+			return qHash(str);
+		}
+
+		std::size_t operator()(const QStringRef & str) const noexcept
+		{
+			return qHash(str);
+		}
+	};
+
+	template <>
+	struct hash<QDateTime>
+	{
+		std::size_t operator()(const QDateTime & val) const noexcept
+		{
+			return qHash(val);
+		}
+	};
+
+	template <>
+	struct hash<QDate>
+	{
+		std::size_t operator()(const QDate & val) const noexcept
+		{
+			return qHash(val);
+		}
+	};
+
+	template <>
+	struct hash<QTime>
+	{
+		std::size_t operator()(const QTime & val) const noexcept
+		{
+			return qHash(val);
+		}
 	};
 }
 
@@ -101,7 +151,10 @@ namespace QtTools
 
 	namespace detail_qtstdstring
 	{
-		extern const std::codecvt_utf8<ushort> & u8cvt;
+		extern const std::codecvt_utf8<char16_t> & u8cvt;
+
+		inline const char16_t * data(const QString & str) noexcept { return reinterpret_cast<const char16_t *>(str.utf16()); }
+		inline       char16_t * data(      QString & str) noexcept { return const_cast<char16_t *>(reinterpret_cast<const char16_t *>(str.utf16())); }
 	}
 
 	/// qt qHash hasher functor for stl like containers
@@ -159,7 +212,7 @@ namespace QtTools
 	template <class Range>
 	void FromQString(const QString & qstr, Range & res)
 	{
-		auto inRng = boost::make_iterator_range_n(qstr.utf16(), qstr.size());
+		auto inRng = boost::make_iterator_range_n(detail_qtstdstring::data(qstr), qstr.size());
 		ext::codecvt_convert::to_bytes(detail_qtstdstring::u8cvt, inRng, res);
 	}
 
@@ -211,7 +264,7 @@ namespace QtTools
 	}
 
 	template <>
-	inline QString FromQString(const QString & qstr) noexcept
+	inline QString FromQString(const QString & qstr)
 	{
 		return qstr;
 	}

@@ -3,8 +3,8 @@
 
 namespace QtTools
 {
-	/// реализация drawText с поддержкой flags для QPoint,
-	/// в painter, уже есть реализация, но для QRect
+	/// СЂРµР°Р»РёР·Р°С†РёСЏ drawText СЃ РїРѕРґРґРµСЂР¶РєРѕР№ flags РґР»СЏ QPoint,
+	/// РІ painter, СѓР¶Рµ РµСЃС‚СЊ СЂРµР°Р»РёР·Р°С†РёСЏ, РЅРѕ РґР»СЏ QRect
 	void DrawText(QPainter & painter, QPointF pos, int flags, const QString & text, QRect * boundingRect = nullptr);
 	void DrawText(QPainter & painter, QPoint pos, int flags, const QString & text, QRect * boundingRect = nullptr);
 

@@ -354,7 +354,6 @@ namespace QtTools
 	template <class Type, template <class...> class Container>
 	bool ListModel<Type, Container>::DndMoveOnto(self_type & model, const int * idx_first, const int * idx_last, int destRow)
 	{
-		QModelIndex parent;
 		int min = *idx_first;
 
 		for (; idx_first != idx_last; ++idx_first)
@@ -374,7 +373,6 @@ namespace QtTools
 	template <class Type, template <class...> class Container>
 	bool ListModel<Type, Container>::DndCopyOnto(self_type & model, const int * idx_first, const int * idx_last, int destRow)
 	{
-		QModelIndex parent;
 		int min = *idx_first;
 
 		for (; idx_first != idx_last; ++idx_first)

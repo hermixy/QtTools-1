@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 #include <vector>
 #include <algorithm>
 
@@ -62,6 +62,7 @@ namespace viewed
 		using typename base_type::signal_range_type;
 		using typename base_type::model_type;
 		using typename base_type::int_vector;
+		using int_vector_iterator = typename int_vector::iterator;
 
 		using signal_const_iterator = typename signal_range_type::const_iterator;
 
@@ -82,8 +83,8 @@ namespace viewed
 		> search_hint_type;
 
 	protected:
-		filter_pred_type m_filter_pred;
 		sort_pred_type m_sort_pred;
+		filter_pred_type m_filter_pred;
 
 	public:
 		/// reinitializes view from owner
@@ -120,7 +121,7 @@ namespace viewed
 		/// range [ifirst, imiddle, ilast) must be permuted the same way as range [first, middle, last)
 		virtual void merge_newdata(
 			store_iterator first, store_iterator middle, store_iterator last,
-			int_vector::iterator ifirst, int_vector::iterator imiddle, int_vector::iterator ilast,
+		    int_vector_iterator ifirst, int_vector_iterator imiddle, int_vector_iterator ilast,
 			bool resort_old = true);
 
 		/// sorts m_store's [first; last) with m_sort_pred, stable sort
@@ -128,7 +129,7 @@ namespace viewed
 		/// sorts m_store's [first; last) with m_sort_pred, stable sort
 		/// range [ifirst; ilast) must be permuted the same way as range [first; last)
 		virtual void sort(store_iterator first, store_iterator last,
-		                  int_vector::iterator ifirst, int_vector::iterator ilast);
+		                  int_vector_iterator ifirst, int_vector_iterator ilast);
 
 		/// sorts m_store's [first; last) with m_sort_pred, stable sort
 		/// emits qt layoutAboutToBeChanged(..., VerticalSortHint), layoutUpdated(..., VerticalSortHint)
@@ -161,8 +162,8 @@ namespace viewed
 		            sort_pred_type sortPred = {},
 		            filter_pred_type filterPred = {})
 			: base_type(owner),
-			  m_sort_pred(std::move(sortPred)),
-			  m_filter_pred(std::move(filterPred))
+		      m_sort_pred(std::move(sortPred)),
+		      m_filter_pred(std::move(filterPred))
 		{ }
 
 		virtual ~sfview_qtbase() = default;
@@ -267,10 +268,10 @@ namespace viewed
 		assert(std::is_sorted(first_erased, last_erased));
 
 		auto     fpred = [this](auto ptr) { return m_filter_pred(*ptr); };
-		auto not_fpred = [this](auto ptr) { return not m_filter_pred(*ptr); };
+		//auto not_fpred = [this](auto ptr) { return not m_filter_pred(*ptr); };
 
 		int_vector index_array, affected_indexes;
-		int_vector::iterator removed_first, removed_last, changed_first, changed_last;
+		int_vector_iterator removed_first, removed_last, changed_first, changed_last;
 		std::size_t middle_sz = first_updated - first;
 		bool order_changed = false;
 
@@ -380,7 +381,7 @@ namespace viewed
 	template <class Container, class SortPred, class FilterPred>
 	void sfview_qtbase<Container, SortPred, FilterPred>::
 		merge_newdata(store_iterator first, store_iterator middle, store_iterator last,
-		              int_vector::iterator ifirst, int_vector::iterator imiddle, int_vector::iterator ilast,
+	                  int_vector_iterator ifirst, int_vector_iterator imiddle, int_vector_iterator ilast,
 		              bool resort_old /* = true */)
 	{
 		if (not active(m_sort_pred)) return;
@@ -411,7 +412,7 @@ namespace viewed
 	template <class Container, class SortPred, class FilterPred>
 	void sfview_qtbase<Container, SortPred, FilterPred>::
 		sort(store_iterator first, store_iterator last,
-		     int_vector::iterator ifirst, int_vector::iterator ilast)
+	         int_vector_iterator ifirst, int_vector_iterator ilast)
 	{
 		if (not active(m_sort_pred)) return;
 
