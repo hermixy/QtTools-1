@@ -1,4 +1,5 @@
-#pragma once
+﻿#pragma once
+#include <variant>
 #include <type_traits> // for result_of
 #include <functional>  // for reference_wrapprer
 #include <ext/functors/indirect_functor.hpp>
@@ -19,11 +20,18 @@ namespace viewed
 	};
 
 	/// преобразует boost::variant<Types...> в boost::variant<boost::indirect_fun<Types>...>
-	template <class... VariantTypes>
+	template <class ... VariantTypes>
 	struct make_indirect_pred_type<boost::variant<VariantTypes...>>
 	{
 		using type = boost::mp11::mp_transform<viewed::make_indirect_pred_type, boost::variant<VariantTypes...>>;
 	};
+
+	template <class ... VariantTypes>
+	struct make_indirect_pred_type<std::variant<VariantTypes...>>
+	{
+		using type = boost::mp11::mp_transform<viewed::make_indirect_pred_type, std::variant<VariantTypes...>>;
+	};
+
 
 	///аналогичен boost::make_indirect_fun,
 	///но корректно обрабатывает boost::variant
