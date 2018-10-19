@@ -138,14 +138,12 @@ namespace viewed
 
 		struct get_reference_type
 		{
-			template <class type> auto operator()(const type & val) const noexcept { return self_type::value_reference(val); }
-			template <class type> auto operator()(      type & val) const noexcept { return self_type::value_reference(val); }
+			template <class type> decltype(auto) operator()(type && val) const noexcept { return self_type::value_reference(std::forward<type>(val)); }
 		};
 
 		struct get_pointer_type
 		{
-			template <class type> auto operator()(const type & val) const noexcept { return self_type::value_pointer(val); }
-			template <class type> auto operator()(      type & val) const noexcept { return self_type::value_pointer(val); }
+			template <class type> decltype(auto) operator()(type & val) const noexcept { return self_type::value_pointer(std::forward<type>(val)); }
 		};
 
 		static constexpr get_reference_type get_reference {};
@@ -199,7 +197,7 @@ namespace viewed
 	public:
 		using view_pointer_type = const_pointer;
 		static view_pointer_type get_view_pointer(const_reference ref)     noexcept { return &ref; }
-		static const_reference   get_view_reference(view_pointer_type ptr) noexcept { return *ptr}
+		static const_reference   get_view_reference(view_pointer_type ptr) noexcept { return *ptr; }
 
 	protected:
 		main_store_type m_store;

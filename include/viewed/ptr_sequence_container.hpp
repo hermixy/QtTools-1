@@ -149,14 +149,12 @@ namespace viewed
 
 		struct get_reference_type
 		{
-			template <class type> auto operator()(const type & val) const noexcept { return self_type::value_reference(val); }
-			template <class type> auto operator()(      type & val) const noexcept { return self_type::value_reference(val); }
+			template <class type> decltype(auto) operator()(type && val) const noexcept { return self_type::value_reference(std::forward<type>(val)); }
 		};
 
 		struct get_pointer_type
 		{
-			template <class type> auto operator()(const type & val) const noexcept { return self_type::value_pointer(val); }
-			template <class type> auto operator()(      type & val) const noexcept { return self_type::value_pointer(val); }
+			template <class type> decltype(auto) operator()(type & val) const noexcept { return self_type::value_pointer(std::forward<type>(val)); }
 		};
 
 		static constexpr get_reference_type get_reference {};

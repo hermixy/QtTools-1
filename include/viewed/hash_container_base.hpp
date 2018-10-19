@@ -47,8 +47,9 @@ namespace viewed
 			);
 		}
 
-		/// get_pointer returns pointer to internal_value_type, it used only for filling signal_store_type
-		static const value_type * get_pointer(const value_type & val) { return &val; }
+		/// obtains pointer from internal_value_type (from main_store_type)
+		static const value_type *  value_pointer(const value_type & val)   { return &val; }
+		static       value_type *  value_pointer(      value_type & val)   { return &val; }
 
 		/// update takes current internal_value_type rvalue as first argument and some generic type as second.
 		/// It updates current value with new data

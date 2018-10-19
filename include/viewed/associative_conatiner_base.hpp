@@ -22,18 +22,21 @@ namespace viewed
 		/// container type used for storing raw pointers for views notifications
 		typedef implementaion_defined signal_store_type;
 
+		/// assumed internal_value_type = typename main_store_type::value_type;
+
 		//////////////////////////////////////////////////////////////////////////
 		///                   traits functions/functors
 		//////////////////////////////////////////////////////////////////////////
-		/// function interface can be static function members or static functors members.
+		/// function interface can be static function members or static functor members.
 		/// if overloading isn't needed static function members  - will be ok,
-		/// but if you want provide several overloads - use static functors members
+		/// but if you want provide several overloads - use static functor members
 
 		/// constructs main_store_type with provided arguments
 		static main_store_type make_store(... main_store_ctor_args);
 
-		/// get_pointer returns pointer to internal_value_type, it used only for filling signal_store_type
-		static const value_type * get_pointer(const value_type & val) { return &val; }
+		/// obtains pointer from internal_value_type (from main_store_type)
+		static const_pointer   value_pointer(const internal_value_type & val)   { return val.get(); }
+		static       pointer   value_pointer(      internal_value_type & val)   { return val.get(); }
 
 		/// update takes current internal_value_type rvalue as first argument and some generic type as second.
 		/// It updates current value with new data
@@ -110,6 +113,19 @@ namespace viewed
 	
 		typedef typename traits_type::main_store_type       main_store_type;
 		typedef typename traits_type::signal_store_type     signal_store_type;
+
+		struct get_reference_type
+		{
+			template <class type> decltype(auto) operator()(type && val) const noexcept { return self_type::value_reference(std::forward<type>(val)); }
+		};
+
+		struct get_pointer_type
+		{
+			template <class type> decltype(auto) operator()(type & val) const noexcept { return self_type::value_pointer(std::forward<type>(val)); }
+		};
+
+		static constexpr get_reference_type get_reference {};
+		static constexpr get_pointer_type   get_pointer {};
 
 	public:
 		//container interface
@@ -237,7 +253,7 @@ namespace viewed
 			bool inserted_into_store;
 			std::tie(where, inserted_into_store) = m_store.insert(std::forward<decltype(val)>(val));
 
-			auto * ptr = traits_type::get_pointer(*where);
+			auto * ptr = get_pointer(*where);
 			if (inserted_into_store)
 			{
 				inserted.push_back(ptr);
@@ -265,7 +281,7 @@ namespace viewed
 
 		auto erased_first = erased.begin();
 		auto erased_last = erased.end();
-		std::transform(m_store.begin(), m_store.end(), erased_first, traits_type::get_pointer);
+		std::transform(m_store.begin(), m_store.end(), erased_first, get_pointer);
 		std::sort(erased_first, erased_last);
 
 		for (; first != last; ++first)
@@ -276,7 +292,7 @@ namespace viewed
 			bool inserted_into_store;
 			std::tie(where, inserted_into_store) = m_store.insert(std::forward<decltype(val)>(val));
 
-			auto * ptr = traits_type::get_pointer(*where);
+			auto * ptr = get_pointer(*where);
 			if (inserted_into_store)
 			{
 				inserted.push_back(ptr);
@@ -288,7 +304,7 @@ namespace viewed
 
 				// remove found item from erase list
 				auto it = std::lower_bound(erased_first, erased_last, ptr);
-				if (it != erased_last and *it == ptr) *it = mark_pointer(*it);
+				if (it != erased_last and *it == ptr) *it = viewed::mark_pointer(*it);
 			}
 		}
 
@@ -303,7 +319,7 @@ namespace viewed
 	void associative_conatiner_base<Type, Traits, SignalTraits>::erase_from_views(const_iterator first, const_iterator last)
 	{
 		signal_store_type todel;
-		std::transform(first, last, std::back_inserter(todel), traits_type::get_pointer);
+		std::transform(first, last, std::back_inserter(todel), get_pointer);
 
 		auto rawRange = signal_traits::make_range(todel.data(), todel.data() + todel.size());
 		m_erase_signal(rawRange);
@@ -320,8 +336,33 @@ namespace viewed
 	void associative_conatiner_base<Type, Traits, SignalTraits>::notify_views
 		(signal_store_type & erased, signal_store_type & updated, signal_store_type & inserted)
 	{
-		auto urr = signal_traits::make_range(updated.data(), updated.data() + updated.size());
-		auto irr = signal_traits::make_range(inserted.data(), inserted.data() + inserted.size());
+		auto inserted_first = inserted.data();
+		auto inserted_last  = inserted_first + inserted.size();
+		auto updated_first  = updated.data();
+		auto updated_last   = updated_first + updated.size();
+
+		// both assign_newrecs and upsert_newrecs can produce duplicates:
+		// * several updates
+		// * insert + update
+		// we must sanitize this, views expect that element is either inserted, updated or erased
+		// insert + followed update(s) -> just insert
+		// update + followed update(s) -> update
+		// there are will no erased duplicates
+
+		std::sort(updated_first, updated_last);
+		updated_last = std::unique(updated_first, updated_last);
+
+		for (auto it = inserted_first; it != inserted_last; ++it)
+		{
+			auto ptr = *it;
+			auto found_it = std::lower_bound(updated_first, updated_last, ptr);
+			if (found_it != updated_last and ptr == *found_it) *it = viewed::mark_pointer(ptr);
+		}
+
+		updated_last = std::remove_if(updated_first, updated_last, viewed::marked_pointer);
+
+		auto urr = signal_traits::make_range(updated_first, updated_last);
+		auto irr = signal_traits::make_range(inserted_first, inserted_last);
 		auto err = signal_traits::make_range(erased.data(), erased.data() + erased.size());
 		m_update_signal(err, urr, irr);
 	}
