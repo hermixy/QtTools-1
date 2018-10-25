@@ -1,17 +1,38 @@
 ﻿#pragma once
 #include <viewed/sftree_facade_qtbase.hpp>
-
+#include <viewed/sftree_is_base_of.hpp>
 
 namespace viewed
 {
-	template <class Traits, class Container, class ModelBase = QAbstractItemModel>
-	class sftree_view_qtbase : public sftree_facade_qtbase<Traits, ModelBase>
+	template <class ... Types>
+	struct sftree_view_base_type
+	{
+		static_assert(sizeof...(Types) >= 2, "insufficient template parameters to sftree_view_qtbase");
+		using list = boost::mp11::mp_list<Types...>;
+		using container_type = boost::mp11::mp_at_c<list, 0>;
+
+		using facade_types = boost::mp11::mp_drop_c<list, 1>;
+		using maybe_traits_type = boost::mp11::mp_at_c<facade_types, 0>;
+
+		using type = std::conditional_t
+		<
+		    sftree_detail::is_base_of<sftree_facade_qtbase, maybe_traits_type>::value,
+		    maybe_traits_type,
+		    boost::mp11::mp_rename<facade_types, sftree_facade_qtbase>
+		>;
+	};
+
+	/// Types are:
+	/// either Container + Traits + ModelBase, same as in sftree_facade_qtbase
+	/// or     Container + sftree_facade_qtbase<Trait, ModelBase> derived class
+	template <class ... Types>
+	class sftree_view_qtbase : public sftree_view_base_type<Types...>::type
 	{
 		using self_type = sftree_view_qtbase;
-		using base_type = sftree_facade_qtbase<Traits, ModelBase>;
+		using base_type = typename sftree_view_base_type<Types...>::type;
 
 	public:
-		using container_type = Container;
+		using container_type = typename sftree_view_base_type<Types...>::container_type;
 
 	protected:
 		// store <-> view exchange
@@ -99,16 +120,16 @@ namespace viewed
 	/************************************************************************/
 	/*                     method implementation                            */
 	/************************************************************************/
-	template <class Traits, class Container, class ModelBase>
-	void sftree_view_qtbase<Traits, Container, ModelBase>::reinit_view()
+	template <class ... Types>
+	void sftree_view_qtbase<Types...>::reinit_view()
 	{
 		using leaf_pointer_vector = std::vector<view_pointer_type>;
 		using reset_context = typename base_type::template reset_context_template<typename leaf_pointer_vector::iterator>;
 
 		leaf_pointer_vector elements;
 		elements.assign(
-			boost::make_transform_iterator(m_owner->begin(), get_view_pointer),
-			boost::make_transform_iterator(m_owner->end(), get_view_pointer)
+		    boost::make_transform_iterator(m_owner->begin(), get_view_pointer),
+		    boost::make_transform_iterator(m_owner->end(), get_view_pointer)
 		);
 
 		this->beginResetModel();
@@ -132,9 +153,9 @@ namespace viewed
 
 	}
 
-	template <class Traits, class Container, class ModelBase>
-	void sftree_view_qtbase<Traits, Container, ModelBase>::update_data(
-		const signal_range_type & erased, const signal_range_type & updated, const signal_range_type & inserted)
+	template <class ... Types>
+	void sftree_view_qtbase<Types...>::update_data(
+	    const signal_range_type & erased, const signal_range_type & updated, const signal_range_type & inserted)
 	{
 		auto erased_first = erased.begin();
 		auto erased_last = erased.end();
@@ -148,20 +169,20 @@ namespace viewed
 		base_type::group_by_paths(inserted_first, inserted_last);
 
 		return base_type::update_data_and_notify(
-			erased_first, erased_last,
-			updated_first, updated_last,
-			inserted_first, inserted_last);
+		    erased_first, erased_last,
+		    updated_first, updated_last,
+		    inserted_first, inserted_last);
 	}
 
-	template <class Traits, class Container, class ModelBase>
-	void sftree_view_qtbase<Traits, Container, ModelBase>::erase_records(const signal_range_type & erased)
+	template <class ... Types>
+	void sftree_view_qtbase<Types...>::erase_records(const signal_range_type & erased)
 	{
 		signal_range_type updated, inserted;
 		return update_data(erased, updated, inserted);
 	}
 
-	template <class Traits, class Container, class ModelBase>
-	void sftree_view_qtbase<Traits, Container, ModelBase>::clear_view()
+	template <class ... Types>
+	void sftree_view_qtbase<Types...>::clear_view()
 	{
 		this->beginResetModel();
 		this->m_root.children.clear();
@@ -169,15 +190,15 @@ namespace viewed
 		this->endResetModel();
 	}
 
-	template <class Traits, class Container, class ModelBase>
-	void sftree_view_qtbase<Traits, Container, ModelBase>::init()
+	template <class ... Types>
+	void sftree_view_qtbase<Types...>::init()
 	{
 		connect_signals();
 		reinit_view();
 	}
 
-	template <class Traits, class Container, class ModelBase>
-	void sftree_view_qtbase<Traits, Container, ModelBase>::connect_signals()
+	template <class ... Types>
+	void sftree_view_qtbase<Types...>::connect_signals()
 	{
 		m_clear_con  = m_owner->on_clear([this] { clear_view(); });
 		m_update_con = m_owner->on_update([this](const signal_range_type & e, const signal_range_type & u, const signal_range_type & i) { update_data(e, u, i); });

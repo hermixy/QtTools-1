@@ -1,13 +1,31 @@
 ﻿#pragma once
 #include <viewed/sftree_facade_qtbase.hpp>
+#include <viewed/sftree_is_base_of.hpp>
 
 namespace viewed
 {
-	template <class Traits, class ModelBase = QAbstractItemModel>
-	class sftree_model_qtbase : public sftree_facade_qtbase<Traits, ModelBase>
+	template <class ... Types>
+	struct sftree_model_base_type
+	{
+		static_assert(sizeof...(Types) >= 1, "insufficient template parameters to sftree_model_qtbase");
+
+		using first_type = boost::mp11::mp_first<boost::mp11::mp_list<Types...>>;
+		using type = std::conditional_t
+		<
+		    (sizeof... (Types) > 1 or not sftree_detail::is_base_of<sftree_facade_qtbase, first_type>::value),
+		    sftree_facade_qtbase<Types...>,
+		    first_type
+		>;
+	};
+
+	/// Types are:
+	/// either Traits + ModelBase, same as in sftree_facade_qtbase
+	/// or     sftree_facade_qtbase<Trait, ModelBase> derived class
+	template <class ... Types>
+	class sftree_model_qtbase : public sftree_model_base_type<Types...>::type
 	{
 		using self_type = sftree_model_qtbase;
-		using base_type = sftree_facade_qtbase<Traits, ModelBase>;
+		using base_type = typename sftree_model_base_type<Types...>::type;
 
 	public:
 		using typename base_type::leaf_type;
@@ -43,8 +61,8 @@ namespace viewed
 		using base_type::base_type;
 	};
 
-	template <class Traits, class ModelBase>
-	void sftree_model_qtbase<Traits, ModelBase>::fill_children_leafs(const page_type & page, std::vector<const leaf_type *> & elements)
+	template <class ... Types>
+	void sftree_model_qtbase<Types...>::fill_children_leafs(const page_type & page, std::vector<const leaf_type *> & elements)
 	{
 		for (auto & child : page.children)
 		{
@@ -55,8 +73,8 @@ namespace viewed
 		}
 	}
 
-	template <class Traits, class ModelBase>
-	void sftree_model_qtbase<Traits, ModelBase>::clear()
+	template <class ... Types>
+	void sftree_model_qtbase<Types...>::clear()
 	{
 		this->beginResetModel();
 		this->m_root.children.clear();
@@ -64,27 +82,27 @@ namespace viewed
 		this->endResetModel();
 	}
 
-	template <class Traits, class ModelBase>
+	template <class ... Types>
 	template <class Range>
 	inline std::enable_if_t<ext::is_range_v<ext::remove_cvref_t<Range>>>
-	sftree_model_qtbase<Traits, ModelBase>::assign(Range && range)
+	sftree_model_qtbase<Types...>::assign(Range && range)
 	{
 		return assign(boost::begin(range), boost::end(range));
 	}
 
-	template <class Traits, class ModelBase>
+	template <class ... Types>
 	template <class Range>
 	inline std::enable_if_t<ext::is_range_v<ext::remove_cvref_t<Range>>>
-	sftree_model_qtbase<Traits, ModelBase>::upsert(Range && range)
+	sftree_model_qtbase<Types...>::upsert(Range && range)
 	{
 		return upsert(boost::begin(range), boost::end(range));
 	}
 
 
-	template <class Traits, class ModelBase>
+	template <class ... Types>
 	template <class Iterator>
 	std::enable_if_t<ext::is_iterator_v<Iterator>>
-	sftree_model_qtbase<Traits, ModelBase>::assign(Iterator first, Iterator last)
+	sftree_model_qtbase<Types...>::assign(Iterator first, Iterator last)
 	{
 		std::vector<const leaf_type *> existing;
 		std::vector<std::unique_ptr<leaf_type>> elements;
@@ -92,8 +110,8 @@ namespace viewed
 
 		auto make_unique = [](auto && element) { return std::make_unique<leaf_type>(std::forward<decltype(element)>(element)); };
 		elements.assign(
-			boost::make_transform_iterator(first, make_unique),
-			boost::make_transform_iterator(last, make_unique));
+		    boost::make_transform_iterator(first, make_unique),
+		    boost::make_transform_iterator(last, make_unique));
 
 		fill_children_leafs(this->m_root, existing);
 
@@ -101,7 +119,7 @@ namespace viewed
 		auto el_last = elements.end();
 
 		auto erased_first = existing.begin();
-		auto erased_last = existing.end();		
+		auto erased_last = existing.end();
 
 		this->group_by_paths(erased_first, erased_last);
 		this->group_by_paths(el_first, el_last);
@@ -127,20 +145,20 @@ namespace viewed
 		auto pp = std::stable_partition(el_first, el_last, pred);
 		erased_last = std::remove_if(erased_first, erased_last, viewed::marked_pointer);
 
-		// [el_first, pp) - updated, [pp, el_last) - inserted		
+		// [el_first, pp) - updated, [pp, el_last) - inserted
 		auto updated  = boost::make_iterator_range(el_first, pp) | ext::moved;
 		auto inserted = boost::make_iterator_range(pp, el_last)  | ext::moved;
 
 		return this->update_data_and_notify(
-			erased_first, erased_last,
-			updated.begin(), updated.end(),
-			inserted.begin(), inserted.end());
+		    erased_first, erased_last,
+		    updated.begin(), updated.end(),
+		    inserted.begin(), inserted.end());
 	}
 
-	template <class Traits, class ModelBase>
+	template <class ... Types>
 	template <class Iterator>
 	std::enable_if_t<ext::is_iterator_v<Iterator>>
-	sftree_model_qtbase<Traits, ModelBase>::upsert(Iterator first, Iterator last)
+	sftree_model_qtbase<Types...>::upsert(Iterator first, Iterator last)
 	{
 		std::vector<const leaf_type *> existing;
 		std::vector<std::unique_ptr<leaf_type>> elements;
@@ -148,8 +166,8 @@ namespace viewed
 
 		auto make_unique = [](auto && element) { return std::make_unique<leaf_type>(std::forward<decltype(element)>(element)); };
 		elements.assign(
-			boost::make_transform_iterator(first, make_unique),
-			boost::make_transform_iterator(last, make_unique));
+		    boost::make_transform_iterator(first, make_unique),
+		    boost::make_transform_iterator(last, make_unique));
 
 		fill_children_leafs(this->m_root, existing);
 
@@ -184,8 +202,8 @@ namespace viewed
 		auto inserted = boost::make_iterator_range(pp, el_last)  | ext::moved;
 
 		return this->update_data_and_notify(
-			ex_first, ex_first, // no erases
-			updated.begin(), updated.end(),
-			inserted.begin(), inserted.end());
+		    ex_first, ex_first, // no erases
+		    updated.begin(), updated.end(),
+		    inserted.begin(), inserted.end());
 	}
 }

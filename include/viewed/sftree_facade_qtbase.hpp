@@ -351,8 +351,8 @@ namespace viewed
 	protected:
 		// those are sort of member functions, but functors
 		static constexpr path_equal_to_type path_equal_to {};
-		static constexpr path_less_type path_less {};
-		static constexpr path_hash_type path_hash {};
+		static constexpr path_less_type     path_less {};
+		static constexpr path_hash_type     path_hash {};
 
 		static constexpr get_name_type           get_name {};
 		static constexpr get_children_type       get_children {};
@@ -360,8 +360,8 @@ namespace viewed
 		static constexpr path_group_pred_type    path_group_pred {};
 
 	protected:
-		static const pathview_type     ms_empty_path;
-		static const value_container   ms_empty_container;
+		static const pathview_type    ms_empty_path;
+		static const value_container  ms_empty_container;
 
 	protected:
 		// root page, note it's somewhat special, it's parent node is always nullptr,
