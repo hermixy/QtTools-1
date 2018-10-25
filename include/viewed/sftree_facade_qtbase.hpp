@@ -122,7 +122,7 @@ namespace viewed
 	///     should be default constructable
 	///
 	template <class Traits, class ModelBase = QAbstractItemModel>
-	class sftree_facade_qtbase : 
+	class sftree_facade_qtbase :
 		public ModelBase,
 		protected Traits
 	{
@@ -133,8 +133,6 @@ namespace viewed
 		using model_helper = AbstractItemModel;
 		using int_vector = std::vector<int>;
 		using int_vector_iterator = int_vector::iterator;
-
-		struct page_type;
 
 	public:
 		using traits_type = Traits;
@@ -158,11 +156,13 @@ namespace viewed
 		using traits_type::is_child;
 
 	public:
-		/// value_ptr is element of that try, sort of value_type,
+		struct page_type;
+
+		/// value_ptr is element of that type, sort of value_type,
 		/// it is what derived class and even clients can work with, some function will provide values of this type
 		using value_ptr = viewed::pointer_variant<const page_type *, const leaf_type *>;
 
-	protected:
+	public:
 		using value_ptr_vector   = std::vector<const value_ptr *>;
 		using value_ptr_iterator = typename value_ptr_vector::iterator;
 
@@ -187,8 +187,8 @@ namespace viewed
 
 			template <class Pointer1, class Pointer2>
 			std::enable_if_t<
-				     std::is_same_v<leaf_type, ext::remove_cvref_t<decltype(*std::declval<Pointer1>())>>
-				 and std::is_same_v<leaf_type, ext::remove_cvref_t<decltype(*std::declval<Pointer2>())>>
+					std::is_same_v<leaf_type, ext::remove_cvref_t<decltype(*std::declval<Pointer1>())>>
+				and std::is_same_v<leaf_type, ext::remove_cvref_t<decltype(*std::declval<Pointer2>())>>
 				, bool
 			>
 			operator()(Pointer1 && p1, Pointer2 && p2) const noexcept { return path_less(traits_type::get_path(*p2), traits_type::get_path(*p1)); }
@@ -225,7 +225,7 @@ namespace viewed
 			value_container children;         // our children
 		};
 
-		struct page_type : page_type_base, traits_type::node_type 
+		struct page_type : page_type_base, traits_type::node_type
 		{
 
 		};
@@ -255,6 +255,7 @@ namespace viewed
 			result_type operator()(const Type * ptr) const { return operator()(*ptr); }
 		};
 
+	protected:
 		/// context used for recursive tree resorting
 		struct resort_context
 		{
@@ -356,7 +357,7 @@ namespace viewed
 		static constexpr get_name_type           get_name {};
 		static constexpr get_children_type       get_children {};
 		static constexpr get_children_count_type get_children_count {};
-		static constexpr path_group_pred_type path_group_pred {};
+		static constexpr path_group_pred_type    path_group_pred {};
 
 	protected:
 		static const pathview_type     ms_empty_path;
@@ -378,23 +379,21 @@ namespace viewed
 		static void group_by_paths(RandomAccessIterator first, RandomAccessIterator last);
 
 	protected:
-		// core QAbstractItemModel functionality implementation
+		/// creates index for element with row, column in given page, this is just more typed version of QAbstractItemModel::createIndex
+		QModelIndex create_index(int row, int column, page_type * ptr) const;
 
+	public: // core QAbstractItemModel functionality implementation
 		/// returns page holding leaf/node pointed by index(or just parent node in other words)
 		page_type * get_page(const QModelIndex & index) const;
 		/// returns leaf/node pointed by index
 		const value_ptr & get_element_ptr(const QModelIndex & index) const;
-		/// creates index for element with row, column in given page, this is just more typed version of QAbstractItemModel::createIndex
-		QModelIndex create_index(int row, int column, page_type * ptr) const;
+		/// find element by given path, if no such element is found - invalid index returned
+		virtual QModelIndex find_element(const pathview_type & path) const;
 
 	public:
 		virtual int rowCount(const QModelIndex & parent) const override;
 		virtual QModelIndex parent(const QModelIndex & index) const override;
 		virtual QModelIndex index(int row, int column, const QModelIndex & parent) const override;
-
-	public:
-		/// find element by given path, if no such element is found - invalid index returned
-		virtual QModelIndex find_element(const pathview_type & path) const;
 
 	protected:
 		/// recalculates page on some changes, updates/inserts/erases,
@@ -1121,6 +1120,9 @@ namespace viewed
 		stable_sort(refs_first, refs_pp);
 
 		seq_view.rearrange(boost::make_transform_iterator(refs_first, detail::make_ref));
+
+		// and recalculate page
+		this->recalculate_page(page);
 	}
 
 	/************************************************************************/
@@ -1341,7 +1343,7 @@ namespace viewed
 
 		rearrange_children_and_notify(page, ctx);
 		// step 6: recalculate node from it's changed children
-		recalculate_page(page);
+		this->recalculate_page(page);
 	}
 
 	template <class Traits, class ModelBase>
