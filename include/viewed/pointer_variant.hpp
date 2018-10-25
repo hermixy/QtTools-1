@@ -102,11 +102,65 @@ namespace viewed
 		>;
 
 	/************************************************************************/
+	/*                    pointer_variant helpers                           */
+	/************************************************************************/
+	namespace pointer_variant_detail
+	{
+		template <std::size_t Num, class Type>
+		struct overload_member_impl
+		{
+			Type operator()(Type) const;
+		};
+
+		template <class ... Types>
+		struct overload_set_impl;
+
+		template <std::size_t ... Indexes, class ... Types>
+		struct overload_set_impl<std::index_sequence<Indexes...>, boost::mp11::mp_list<Types...>> : overload_member_impl<Indexes, Types>...
+		{
+			using overload_member_impl<Indexes, Types>::operator()...;
+		};
+
+		template <class ... Types>
+		struct overload_set : overload_set_impl<std::index_sequence_for<Types...>, boost::mp11::mp_list<Types...>>
+		{
+			using base_type = overload_set_impl<std::index_sequence_for<Types...>, boost::mp11::mp_list<Types...>>;
+			using base_type::operator();
+		};
+
+
+		template <class TypeList, class Type, class = void>
+		struct invokable_impl : std::false_type {};
+
+		template <template <class...> class TypeList, class ... Types, class Type>
+		struct invokable_impl<TypeList<Types...>, Type, std::void_t<std::invoke_result_t<overload_set<Types...>, Type>>> : std::true_type {};
+
+		template <class TypeList, class Type>
+		using invokable = invokable_impl<TypeList, Type>;
+
+		template <class TypeList, class Type>
+		const auto invokable_v = invokable<TypeList, Type>::value;
+
+
+		template <class WithTypeList, class ArgumentTypeList>
+		using all_invokable = boost::mp11::mp_all_of_q<ArgumentTypeList, boost::mp11::mp_bind<invokable, WithTypeList, boost::mp11::_1>>;
+
+		template <class WithTypeList, class ArgumentTypeList>
+		const auto all_invokable_v = all_invokable<WithTypeList, ArgumentTypeList>::value;
+
+
+		template <class list, class ptr_type>
+		constexpr auto find_v = boost::mp11::mp_find_if_q<list, boost::mp11::mp_bind<std::is_same, ptr_type, boost::mp11::_1>>::value;
+	}
+
+	/************************************************************************/
 	/*                    pointer_variant                                   */
 	/************************************************************************/
 	template <class ... PointerTypes>
 	class pointer_variant
 	{
+		template <class ... OtherPointerTypes> friend class pointer_variant;
+
 		using self_type = pointer_variant;
 
 		static constexpr unsigned TYPE_BITS = boost::static_log2<sizeof...(PointerTypes)>::value + (sizeof...(PointerTypes) % 2 != 0);
@@ -140,16 +194,27 @@ namespace viewed
 		void destroy() noexcept;
 
 	public:
+		//constexpr void * release()       noexcept { auto ptr = unpack(m_ptr); m_val = 0; return ptr; }
 		constexpr void * pointer() const noexcept { return unpack(m_ptr); }
 		constexpr std::size_t index() const noexcept { return m_type; }
 		void swap(pointer_variant & other) noexcept { std::swap(m_val, other.m_val); }
 
 	public:
-		template <class Type> pointer_variant(Type * ptr) noexcept;
-		template <class Type> pointer_variant & operator =(Type * ptr) noexcept;
+		template <class Type, std::enable_if_t<pointer_variant_detail::invokable_v<pointer_variant<PointerTypes...>, Type *>, int> = 0>
+		pointer_variant(Type * ptr) noexcept;
 
-		template <class Type> pointer_variant(std::unique_ptr<Type> ptr) noexcept;
-		template <class Type> pointer_variant & operator =(std::unique_ptr<Type> ptr) noexcept;
+		template <class Type, std::enable_if_t<pointer_variant_detail::invokable_v<pointer_variant<PointerTypes...>, Type *>, int> = 0>
+		pointer_variant & operator =(Type * ptr) noexcept;
+
+		template <class Type, std::enable_if_t<pointer_variant_detail::invokable_v<pointer_variant<PointerTypes...>, Type *>, int> = 0>
+		pointer_variant(std::unique_ptr<Type> ptr) noexcept;
+
+		template <class Type, std::enable_if_t<pointer_variant_detail::invokable_v<pointer_variant<PointerTypes...>, Type *>, int> = 0>
+		pointer_variant & operator =(std::unique_ptr<Type> ptr) noexcept;
+
+		// conversion constructor from variant of different pointer types
+		template <class ... OtherPointerTypes, std::enable_if_t<pointer_variant_detail::all_invokable_v<pointer_variant<PointerTypes...>, pointer_variant<OtherPointerTypes...>>, int> = 0>
+		pointer_variant(pointer_variant<OtherPointerTypes...> && other) noexcept;
 
 	public:
 		pointer_variant(pointer_variant &&) noexcept;
@@ -171,23 +236,12 @@ namespace viewed
 		v1.swap(v2);
 	}
 
-	namespace pointer_variant_detail
-	{
-		template <class current, class searched> 
-		using is_same = boost::mp11::mp_or<
-			std::is_same<current, searched>,
-			std::is_same<std::remove_cv_t<std::remove_pointer_t<current>>, std::remove_pointer_t<searched>>
-		>;
-
-		template <class list, class ptr_type>
-		constexpr auto find_v = boost::mp11::mp_find_if_q<list, boost::mp11::mp_bind<is_same, boost::mp11::_1, ptr_type>>::value;
-	}
-
 	template <class ... PointerTypes>
-	template <class Type>
+	template <class Type, std::enable_if_t<pointer_variant_detail::invokable_v<pointer_variant<PointerTypes...>, Type *>, int> /*= 0*/>
 	inline pointer_variant<PointerTypes...>::pointer_variant(Type * ptr) noexcept
 	{
-		constexpr auto idx = pointer_variant_detail::find_v<self_type, Type *>;
+		using result_type = std::invoke_result_t<pointer_variant_detail::overload_set<PointerTypes...>, Type *>;
+		constexpr auto idx = pointer_variant_detail::find_v<self_type, result_type>;
 		static_assert(idx < boost::mp11::mp_size<self_type>::value, "pointer type not from given type list");
 		assert((reinterpret_cast<std::uintptr_t>(ptr) & PTR_MASK) == 0);
 
@@ -197,12 +251,12 @@ namespace viewed
 	}
 
 	template <class ... PointerTypes>
-	template <class Type>
+	template <class Type, std::enable_if_t<pointer_variant_detail::invokable_v<pointer_variant<PointerTypes...>, Type *>, int> /*= 0*/>
 	inline auto pointer_variant<PointerTypes...>::operator =(Type * ptr) noexcept -> pointer_variant &	
 	{
-		constexpr auto idx = pointer_variant_detail::find_v<self_type, Type *>;
+		using result_type = std::invoke_result_t<pointer_variant_detail::overload_set<PointerTypes...>, Type *>;
+		constexpr auto idx = pointer_variant_detail::find_v<self_type, result_type>;
 		static_assert(idx < boost::mp11::mp_size<self_type>::value, "pointer type not from given type list");
-		assert((reinterpret_cast<std::uintptr_t>(ptr) & PTR_MASK) == 0);
 
 		destroy();
 
@@ -214,7 +268,7 @@ namespace viewed
 	}
 
 	template <class ... PointerTypes>
-	template <class Type>
+	template <class Type, std::enable_if_t<pointer_variant_detail::invokable_v<pointer_variant<PointerTypes...>, Type *>, int> /*= 0*/>
 	inline pointer_variant<PointerTypes...>::pointer_variant(std::unique_ptr<Type> ptr) noexcept
 		: pointer_variant(ptr.release())
 	{
@@ -222,11 +276,24 @@ namespace viewed
 	}
 
 	template <class ... PointerTypes>
-	template <class Type>
+	template <class Type, std::enable_if_t<pointer_variant_detail::invokable_v<pointer_variant<PointerTypes...>, Type *>, int> /*= 0*/>
 	inline auto pointer_variant<PointerTypes...>::operator =(std::unique_ptr<Type> ptr) noexcept -> pointer_variant &	
 	{
 		m_owning = 1;
 		return operator =(ptr.release());
+	}
+
+	// conversion constructor from variant of different pointer types
+	template <class ... PointerTypes>
+	template <class ... OtherPointerTypes, std::enable_if_t<pointer_variant_detail::all_invokable_v<pointer_variant<PointerTypes...>, pointer_variant<OtherPointerTypes...>>, int> /*= 0*/>
+	pointer_variant<PointerTypes...>::pointer_variant(pointer_variant<OtherPointerTypes...> && other) noexcept
+	{
+		auto constructor = [](auto * ptr) { return self_type(ptr); };
+		auto self = viewed::visit(constructor, other);
+
+		m_val = std::exchange(self.m_val, 0);
+		m_owning = other.m_owning;
+		other.m_val = 0;
 	}
 
 	template <class ... PointerTypes>	
@@ -239,7 +306,7 @@ namespace viewed
 	inline void pointer_variant<PointerTypes...>::destroy() noexcept
 	{
 		if (m_owning)
-			visit([](auto * ptr) { delete ptr; }, *this);
+			viewed::visit([](auto * ptr) { delete ptr; }, *this);
 	}
 
 	template <class ... PointerTypes>
