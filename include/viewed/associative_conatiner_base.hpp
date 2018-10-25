@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 #include <algorithm>
 #include <iterator> // for back_inserter
 #include <viewed/signal_traits.hpp>
@@ -223,8 +223,12 @@ namespace viewed
 		void assign(std::initializer_list<value_type> ilist) { assign(std::begin(ilist), std::end(ilist)); }
 
 	protected:
+		associative_conatiner_base(traits_type traits = {})
+		    : traits_type(std::move(traits))
+		{};
+
 		template <class ... StoreArgs>
-		associative_conatiner_base(traits_type traits = {}, StoreArgs && ... storeArgs)
+		associative_conatiner_base(traits_type traits, StoreArgs && ... storeArgs)
 			: traits_type(std::move(traits)),
 			  m_store(traits_type::make_store(std::forward<StoreArgs>(storeArgs)...))
 		{};

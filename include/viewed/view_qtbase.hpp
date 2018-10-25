@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 #include <vector>
 #include <ext/range/range_traits.hpp>
 #include <viewed/qt_model.hpp>
@@ -44,7 +44,7 @@ namespace viewed
 		/// reinitializes view
 		/// default implementation just copies from owner
 		/// calls qt beginResetModel/endResetModel
-		virtual void reinit_view();
+		virtual void reinit_view() override;
 
 	protected:
 		/// acquires pointer to qt model, normally you would inherit both QAbstractItemModel and this class.
@@ -60,10 +60,10 @@ namespace viewed
 
 	protected:
 		/// sorts erased and updated ranges by pointer value, so we can use binary search on them
-		void prepare_update(
+		virtual void prepare_update(
 			const signal_range_type & erased,
 			const signal_range_type & updated,
-			const signal_range_type & inserted);
+			const signal_range_type & inserted) override;
 
 	protected:
 		/// container event handlers, those are called on container signals,
