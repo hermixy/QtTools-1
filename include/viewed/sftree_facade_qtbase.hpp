@@ -502,7 +502,7 @@ namespace viewed
 	template <class Traits, class ModelBase>
 	const typename sftree_facade_qtbase<Traits, ModelBase>::pathview_type sftree_facade_qtbase<Traits, ModelBase>::ms_empty_path;
 
-	namespace detail
+	namespace sftree_detail
 	{
 		const auto make_ref = [](auto * ptr) { return std::ref(*ptr); };
 	}
@@ -820,7 +820,7 @@ namespace viewed
 		std::iota(ifirst, ilast, offset);
 		stable_sort(first, middle, ifirst, imiddle);
 
-		seq_view.rearrange(boost::make_transform_iterator(first, detail::make_ref));
+		seq_view.rearrange(boost::make_transform_iterator(first, sftree_detail::make_ref));
 		inverse_index_array(inverse_array, ifirst, ilast, offset);
 		change_indexes(page, ctx.model_index_first, ctx.model_index_last,
 					   inverse_array.begin(), inverse_array.end(), offset);
@@ -906,7 +906,7 @@ namespace viewed
 		std::transform(ivpp, ivlast, ivpp, viewed::mark_index);
 
 		int nvisible_new = vpp - vfirst;
-		seq_view.rearrange(boost::make_transform_iterator(vfirst, detail::make_ref));
+		seq_view.rearrange(boost::make_transform_iterator(vfirst, sftree_detail::make_ref));
 		page.nvisible = nvisible_new;
 
 		inverse_index_array(inverse_array, index_array.begin(), index_array.end(), offset);
@@ -1029,7 +1029,7 @@ namespace viewed
 		}
 
 		// rearranging is over -> set order it boost::multi_index_container
-		seq_view.rearrange(boost::make_transform_iterator(vfirst, detail::make_ref));
+		seq_view.rearrange(boost::make_transform_iterator(vfirst, sftree_detail::make_ref));
 		page.nvisible = nvisible_new;
 
 		// recalculate qt persistent indexes and notify any clients
@@ -1119,7 +1119,7 @@ namespace viewed
 		// apply sorting
 		stable_sort(refs_first, refs_pp);
 
-		seq_view.rearrange(boost::make_transform_iterator(refs_first, detail::make_ref));
+		seq_view.rearrange(boost::make_transform_iterator(refs_first, sftree_detail::make_ref));
 
 		// and recalculate page
 		this->recalculate_page(page);
@@ -1550,7 +1550,7 @@ namespace viewed
 		// resort visible area, merge new elements and changed from shadow area(std::stable sort + std::inplace_merge)
 		merge_newdata(vfirst, vlast, nlast, ifirst, imiddle, ifirst + (nlast - vfirst), resort_old);
 		// at last, rearranging is over -> set order it boost::multi_index_container
-		seq_view.rearrange(boost::make_transform_iterator(vfirst, detail::make_ref));
+		seq_view.rearrange(boost::make_transform_iterator(vfirst, sftree_detail::make_ref));
 		// and erase removed elements
 		seq_view.resize(seq_view.size() - ctx.erased_count);
 		page.nvisible = nvisible_new;
