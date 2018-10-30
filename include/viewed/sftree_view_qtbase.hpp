@@ -54,7 +54,7 @@ namespace viewed
 		};
 
 	protected:
-		static constexpr get_view_pointer_type get_view_pointer {};
+		static constexpr get_view_pointer_type   get_view_pointer {};
 		static constexpr get_view_reference_type get_view_reference {};
 
 	protected:
@@ -141,12 +141,12 @@ namespace viewed
 		reset_context ctx;
 
 		auto first = elements.begin();
-		auto last = elements.end();
+		auto last  = elements.end();
 		this->group_by_paths(first, last);
 
 		ctx.vptr_array = &valptr_array;
 		ctx.first = first;
-		ctx.last = last;
+		ctx.last  = last;
 		this->reset_page(this->m_root, ctx);
 
 		this->endResetModel();
@@ -157,12 +157,12 @@ namespace viewed
 	void sftree_view_qtbase<Types...>::update_data(
 	    const signal_range_type & erased, const signal_range_type & updated, const signal_range_type & inserted)
 	{
-		auto erased_first = erased.begin();
-		auto erased_last = erased.end();
-		auto updated_first = updated.begin();
-		auto updated_last = updated.end();
+		auto erased_first   = erased.begin();
+		auto erased_last    = erased.end();
+		auto updated_first  = updated.begin();
+		auto updated_last   = updated.end();
 		auto inserted_first = inserted.begin();
-		auto inserted_last = inserted.end();
+		auto inserted_last  = inserted.end();
 
 		base_type::group_by_paths(erased_first, erased_last);
 		base_type::group_by_paths(updated_first, updated_last);

@@ -172,10 +172,10 @@ namespace viewed
 		fill_children_leafs(this->m_root, existing);
 
 		auto el_first = elements.begin();
-		auto el_last = elements.end();
+		auto el_last  = elements.end();
 
 		auto ex_first = existing.begin();
-		auto ex_last = existing.end();
+		auto ex_last  = existing.end();
 
 		this->group_by_paths(ex_first, ex_last);
 		this->group_by_paths(el_first, el_last);
