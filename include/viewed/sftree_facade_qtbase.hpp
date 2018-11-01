@@ -93,16 +93,16 @@ namespace viewed
 	///
 	///   NOTE: static members can be functors
 	///   methods for working with given types:
-	///     static void set_name(node_type & node, path_type && path, path_type && name);
+	///     static void set_name(node_type & node, pathview_type && path, pathview_type && name);
 	///       assigns path and name to node, path is already contains name, no concatenation is needed.
 	///       In fact node can hold only given name part, or whole path if desired.
 	///       possible implementation: item.name = name
 	///
-	///     static path_type get_name(const leaf_type & leaf);
-	///     static path_type get_name(const node_type & node);
+	///     static auto get_name(const leaf_type & leaf) -> path_type/pathview_type/const path_type &;
+	///     static auto get_name(const node_type & node) -> path_type/pathview_type/const path_type &;
 	///       returns/extracts name from leaf/node, usually something like: return extract_name(leaf/node.name)
 	///
-	///     static path_type get_path(const leaf_type & leaf);
+	///     static auto get_path(const leaf_type & leaf) -> path_type/pathview_type/const path_type &;
 	///       returns whole path from leaf, usually something like: return leaf.filepath
 	///
 	///     bool is_child(const pathview_type & path, const pathview_type & node_name, const pathview_type & leaf_path);
@@ -168,15 +168,15 @@ namespace viewed
 
 		struct get_name_type
 		{
-			using result_type = path_type;
-			result_type operator()(const path_type & path) const { return traits_type::get_name(path); }
-			result_type operator()(const leaf_type & leaf) const { return traits_type::get_name(leaf); }
-			result_type operator()(const page_type & page) const { return traits_type::get_name(static_cast<const node_type &>(page)); }
-			result_type operator()(const value_ptr & val)  const { return viewed::visit(*this, val); }
+			using result_type = pathview_type;
+			decltype(auto) operator()(const path_type & path) const { return traits_type::get_name(path); }
+			decltype(auto) operator()(const leaf_type & leaf) const { return traits_type::get_name(leaf); }
+			decltype(auto) operator()(const page_type & page) const { return traits_type::get_name(static_cast<const node_type &>(page)); }
+			decltype(auto) operator()(const value_ptr & val)  const { return viewed::visit(*this, val); }
 
 			// important, viewed::visit(*this, val) depends on them, otherwise infinite recursion would occur
-			result_type operator()(const leaf_type * leaf) const { return traits_type::get_name(*leaf); }
-			result_type operator()(const page_type * page) const { return traits_type::get_name(*page); }
+			decltype(auto) operator()(const leaf_type * leaf) const { return traits_type::get_name(*leaf); }
+			decltype(auto) operator()(const page_type * page) const { return traits_type::get_name(*page); }
 		};
 
 		struct path_group_pred_type

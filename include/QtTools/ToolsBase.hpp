@@ -7,6 +7,7 @@
 #include <QtCore/QObject>
 #include <QtWidgets/QWidget>
 
+#include <memory>
 #include <string>
 #include <codecvt>
 #include <ext/range.hpp>
@@ -17,6 +18,8 @@
 /*                нужна для ext::interpolate                            */
 /************************************************************************/
 Q_DECLARE_METATYPE(std::string)
+Q_DECLARE_SMART_POINTER_METATYPE(std::unique_ptr)
+Q_DECLARE_SMART_POINTER_METATYPE(std::shared_ptr)
 
 static_assert(std::is_same_v<QString::iterator, QChar *>);
 static_assert(std::is_same_v<QString::const_iterator, const QChar *>);
