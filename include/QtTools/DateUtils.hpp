@@ -4,6 +4,7 @@
 #include <chrono>
 
 #include <boost/chrono.hpp>
+#include <QtCore/QMetaType>
 #include <QtCore/QDateTime>
 
 namespace QtTools
@@ -153,5 +154,12 @@ namespace QtTools
 	{
 		return boost::chrono::system_clock::from_time_t(dt.toMSecsSinceEpoch() / 1000);
 	}
+
+
+
+	/// регистрирует std::chrono::system_clock::time_point/duration в Qt meta system
+	void QtRegisterStdChronoTypes();
 }
 
+Q_DECLARE_METATYPE(std::chrono::system_clock::time_point);
+Q_DECLARE_METATYPE(std::chrono::system_clock::duration);

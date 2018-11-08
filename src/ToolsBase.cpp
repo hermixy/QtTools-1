@@ -1,4 +1,6 @@
 #include <QtTools/ToolsBase.hpp>
+#include <QtTools/DateUtils.hpp>
+#include <QtTools/QMetaType_RegisterConverters.hpp>
 
 namespace QtTools
 {
@@ -47,6 +49,18 @@ namespace QtTools
 	{
 		qRegisterMetaType<std::string>();
 		QMetaType::registerComparators<std::string>();
+		QMetaType_RegisterStringConverters<std::string>();
+	}
+
+	void QtRegisterStdChronoTypes()
+	{
+		qRegisterMetaType<std::chrono::system_clock::time_point>();
+		qRegisterMetaType<std::chrono::system_clock::duration>();
+
+		QMetaType::registerComparators<std::chrono::system_clock::time_point>();
+		QMetaType::registerComparators<std::chrono::system_clock::duration>();
+
+		QMetaType_RegisterDateConverters<std::chrono::system_clock::time_point>();
 	}
 
 	void ToQString(const char * str, std::size_t len, QString & res)
