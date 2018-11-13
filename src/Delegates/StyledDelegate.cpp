@@ -1,4 +1,4 @@
-#include <QtTools/Delegates/StyledDelegate.hpp>
+﻿#include <QtTools/Delegates/StyledDelegate.hpp>
 #include <QtTools/Delegates/StyledParts.hpp>
 #include <QtTools/Delegates/DrawFormattedText.hpp>
 #include <QtGui/QPainter>
@@ -61,5 +61,12 @@ namespace Delegates
 		if (HasFocusFrame(opt)) DrawFocusFrame(painter, opt);
 
 		painter->restore();
+	}
+
+	QSize StyledDelegate::sizeHint(const QStyleOptionViewItem & option, const QModelIndex & index) const
+	{
+		auto opt = option;
+		InitStyle(opt, index);
+		return QStyledItemDelegate::sizeHint(opt, index);
 	}
 }}

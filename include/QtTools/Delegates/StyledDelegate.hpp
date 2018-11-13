@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 #include <QtWidgets/QWidget>
 #include <QtWidgets/QStyle>
 #include <QtWidgets/QStyleOption>
@@ -55,6 +55,7 @@ namespace Delegates
 		/// т.е. if (HasCheckmark) DrawCheckmark и т.д.
 		/// порядок рисования: DrawBackground -> DrawCheckmark -> DrawDecoration -> DrawText -> DrawFocusFrame
 		void paint(QPainter * painter, const QStyleOptionViewItem & option, const QModelIndex & index) const override;
+		QSize sizeHint(const QStyleOptionViewItem & option, const QModelIndex & index) const override;
 
 	public:
 		StyledDelegate(QObject * parent = nullptr)
