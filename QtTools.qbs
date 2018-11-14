@@ -5,42 +5,34 @@ StaticLibrary
 {
 	Depends { name: "cpp" }
 	Depends { name: "extlib" }
-	
+
 	Depends { name: "Qt"; submodules: ["core", "gui", "widgets"] }
-	
+
 	cpp.cxxLanguageVersion : "c++17"
-	//cpp.defines: project.additionalDefines
-	//cpp.includePaths: project.additionalIncludePaths
-	cpp.systemIncludePaths: project.additionalSystemIncludePaths
 	cpp.cxxFlags: project.additionalCxxFlags
 	cpp.driverFlags: project.additionalDriverFlags
+	//cpp.defines: project.additionalDefines
+	cpp.systemIncludePaths: project.additionalSystemIncludePaths
+	cpp.includePaths: ["include"].uniqueConcat(project.additionalIncludePaths || [])
 	cpp.libraryPaths: project.additionalLibraryPaths
 
-	cpp.includePaths : { 
-		var includes = ["include"]
-		
-		if (project.additionalIncludePaths)
-			includes = includes.uniqueConcat(project.additionalIncludePaths)
-		
-		return includes
-	}
-	
+
 	Export
 	{
 		Depends { name: "cpp" }
-		
+
 		cpp.cxxLanguageVersion : "c++17"
 		cpp.includePaths : ["include"]
 	}
-	
-    FileTagger {
-        patterns: "*.hqt"
-        fileTags: ["hpp"]
-    }
+
+	FileTagger {
+		patterns: "*.hqt"
+		fileTags: ["hpp"]
+	}
 
 	files: [
 		"include/**",
 		"src/**",
-        "resources/**"
+		"resources/**"
 	]
 }
