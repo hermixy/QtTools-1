@@ -135,12 +135,13 @@ namespace QtTools
 		const auto line_limit  = m_line_limit > 0 ? m_line_limit : INT_MAX;
 		const auto lines_count = [&fm](const auto & rect) { return rect.height() / fm.lineSpacing(); };
 
-		const auto default_height = QApplication::desktop()->availableGeometry().width();
+		const auto default_height = QApplication::desktop()->availableGeometry().height();
 		const auto maximum_size = this->maximumSize();
 		const bool try_width = width < 0 and m_word_wrap;
 		width = try_width ? std::min(fm.averageCharWidth() * 80, maximum_size.width())
 		                  : width < 0 ? 2000 : width;
 
+		// this is similar to how QLabel calculates size for height
 		auto layout = LayoutText({0, 0, width, default_height}, m_line_limit);
 		auto rect = NaturalBoundingRect(*layout);
 		auto lc = lines_count(rect);
@@ -175,7 +176,7 @@ namespace QtTools
 		return m_cached_size_hint = sizeForWidth(-1);
 	}
 
-	//QSize SimpleLabel::minimumSizeHint() const
+	//QSize PlainLabel::minimumSizeHint() const
 	//{
 	//	if (m_cached_minumum_size_hint.isValid()) return m_cached_minumum_size_hint;
 	//	return m_cached_minumum_size_hint = sizeForWidth(0);
@@ -297,7 +298,7 @@ namespace QtTools
 		update();
 	}
 
-	void PlainLabel::init()
+	void PlainLabel::Init()
 	{
 		QSizePolicy pol(QSizePolicy::Preferred, QSizePolicy::Preferred, QSizePolicy::Label);
 		setSizePolicy(pol);
@@ -306,12 +307,12 @@ namespace QtTools
 	PlainLabel::PlainLabel(QWidget * parent /*= nullptr*/, Qt::WindowFlags flags /*= Qt::WindowFlags()*/)
 	    : QFrame(parent, flags)
 	{
-		init();
+		Init();
 	}
 
 	PlainLabel::PlainLabel(const QString & text, QWidget * parent /*= nullptr*/, Qt::WindowFlags flags /*= Qt::WindowFlags()*/)
 	    : QFrame(parent, flags), m_text(text)
 	{
-		init();
+		Init();
 	}
 }

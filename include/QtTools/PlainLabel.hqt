@@ -32,7 +32,7 @@ namespace QtTools
 		bool m_strict_line_limit = false;            // does line limit applies only on size hints or on paint events to
 		int m_margin = 0;                            // margin between frame and text
 		int m_indent = -1;                           // ident between text and frame - see QLabel description for more info
-		int m_line_limit = -1;                       // there should not be more than given lines of text. If not feeted - text would be elided.
+		int m_line_limit = -1;                       // there should not be more than given lines of text. If not fited - text would be elided.
 		                                             // By default influences only size hint, if strict mode is turned on - than applies on paint too.
 		                                             // 0 and negatives - line limit disabled
 
@@ -68,7 +68,7 @@ namespace QtTools
 
 	protected:
 		/// initializes label, called from constructor, sets widget size policy
-		void init();
+		void Init();
 		/// Calculates ident - see QLabel description
 		int GetIdent(const QFontMetrics & fm) const;
 
