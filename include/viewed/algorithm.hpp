@@ -1,6 +1,7 @@
 ﻿#pragma once
 #include <cstddef>
 #include <cstdint>
+#include <climits> // for CHAR_BTI
 #include <type_traits>
 #include <vector>
 #include <algorithm>
@@ -21,6 +22,13 @@ namespace viewed
 	{
 		auto vis = [](const auto & pred) { return detail::active_visitor(pred); };
 		return varalgo::variant_traits<std::decay_t<Pred>>::visit(vis, std::forward<Pred>(pred));
+	}
+
+	namespace detail
+	{
+		constexpr int INDEX_MARK_MASK = 1 << (sizeof(int) * CHAR_BIT - 1);
+		constexpr int INDEX_UNMARK_MASK = ~INDEX_MARK_MASK;
+		static_assert(INDEX_MARK_MASK == INT_MIN, "some very unusual architecture here");
 	}
 
 	struct mark_pointer_type
@@ -55,23 +63,11 @@ namespace viewed
 		}
 	};
 
-	constexpr mark_pointer_type   mark_pointer {};
-	constexpr unmark_pointer_type unmark_pointer {};
-	constexpr marked_pointer_type marked_pointer {};
-
-	namespace detail
-	{
-		constexpr int INDEX_MARK_MASK = 1 << (sizeof(int) * CHAR_BIT - 1);
-		constexpr int INDEX_UNMARK_MASK = ~INDEX_MARK_MASK;
-		static_assert(INDEX_MARK_MASK == INT_MIN, "some very unusual architecture here");
-	}
-
-
 	struct mark_index_type
 	{
 		constexpr int operator()(int idx) const noexcept
 		{
-			return idx |= detail::INDEX_MARK_MASK;
+			return idx | detail::INDEX_MARK_MASK;
 		}
 	};
 
@@ -79,7 +75,7 @@ namespace viewed
 	{
 		constexpr int operator()(int idx) const noexcept
 		{
-			return idx &= detail::INDEX_UNMARK_MASK;
+			return idx & detail::INDEX_UNMARK_MASK;
 		}
 	};
 
@@ -90,6 +86,11 @@ namespace viewed
 			return idx & detail::INDEX_MARK_MASK;
 		}
 	};
+
+
+	constexpr mark_pointer_type   mark_pointer {};
+	constexpr unmark_pointer_type unmark_pointer {};
+	constexpr marked_pointer_type marked_pointer {};
 
 	constexpr mark_index_type   mark_index {};
 	constexpr unmark_index_type unmark_index {};
