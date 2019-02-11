@@ -1,0 +1,62 @@
+#pragma once
+#include "AbstractTestModel.hqt"
+#include <viewed/sftree_view_qtbase.hpp>
+#include <viewed/sftree_model_qtbase.hpp>
+
+/// traits class for tree model, it describes how to work with our type
+/// see sftree_facade_qtbase for documentation
+struct test_entity_sftree_traits
+{
+	// QStringRef is somewhat inconvenient, it can be used, but because of it, ref.toString(), and &item.filename constructs must be used
+	// using QString for both path_type and pathview_type is actually more convenient, for this example QString and QStringRef will be used.
+	// std::string and std::string_view does not have this api inconvenience
+
+	using path_type     = QString;
+	using pathview_type = QStringRef;
+
+	using path_equal_to_type = std::equal_to<>;
+	using path_less_type     = std::less<>;
+	using path_hash_type     = std::hash<pathview_type>;
+
+	using leaf_type = test_tree_entity;
+	using node_type = test_tree_node;
+
+	// those must be static	
+	static void set_name(node_type & node, const pathview_type & path, const pathview_type & name) { node.filename = name.toString(); }
+	static pathview_type get_name(const leaf_type & leaf) { return ::get_name(&leaf.filename); }
+	static pathview_type get_name(const node_type & node) { return ::get_name(&node.filename); }
+	static pathview_type get_path(const leaf_type & leaf) { return &leaf.filename; }
+
+	// those - not necessary
+	auto parse_path(const pathview_type & context, const pathview_type & path) const
+	    -> std::tuple<std::uintptr_t, pathview_type, pathview_type>;
+	bool is_child(const pathview_type & path, const pathview_type & context, const pathview_type & node_name) const;
+
+	using sort_pred_type = test_tree_sorter;
+	using filter_pred_type = test_tree_filter;
+};
+
+
+class TestTreeModelBase : public viewed::sftree_facade_qtbase<test_entity_sftree_traits, AbstractTestModel>
+{
+	using base_type = viewed::sftree_facade_qtbase<test_entity_sftree_traits, AbstractTestModel>;
+
+protected:
+	virtual void recalculate_page(page_type & page) override;
+
+	virtual void FilterBy(QString expr) override;
+	virtual void SortBy(int column, Qt::SortOrder order) override;
+
+public:
+	// implemented by derived
+	virtual QVariant GetEntity(const QModelIndex & index) const override;
+	virtual QVariant GetItem(const QModelIndex & index) const override;
+	virtual int FullRowCount(const QModelIndex & parent = QModelIndex()) const override;
+
+public:
+	using base_type::base_type;
+};
+
+
+using TestTreeModel = viewed::sftree_model_qtbase<TestTreeModelBase>;
+//using TestTreeView = viewed::sftree_view_qtbase<Container, TestTreeModelBase>;
