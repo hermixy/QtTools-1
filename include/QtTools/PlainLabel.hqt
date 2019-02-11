@@ -10,9 +10,9 @@
 
 namespace QtTools
 {
-	/// Simple plain labal widget. It's similar to QLabel,
+	/// Simple plain label widget. It's similar to QLabel,
 	/// but support only plain text, no html, no pixmap, no picture, no editing, no selecting, etc.
-	/// On the other hand it allows text eliding, if not fitted. And overral more simple implementation.
+	/// On the other hand it allows text eliding, if not fitted. And overall more simple implementation.
 	class PlainLabel : public QFrame
 	{
 		Q_OBJECT;
@@ -28,17 +28,17 @@ namespace QtTools
 	protected:
 		QString m_text;                              // displayed text
 		Qt::Alignment m_alignment = Qt::AlignLeft;   // text alignment
-		bool m_word_wrap = false;                    // should text be word wraped, if turned on, than this widget also have heightForWidth mechanic turned on
+		bool m_word_wrap = false;                    // should text be word wrapped, if turned on, than this widget also have heightForWidth mechanic turned on
 		bool m_strict_line_limit = false;            // does line limit applies only on size hints or on paint events to
 		int m_margin = 0;                            // margin between frame and text
-		int m_indent = -1;                           // ident between text and frame - see QLabel description for more info
-		int m_line_limit = -1;                       // there should not be more than given lines of text. If not fited - text would be elided.
+		int m_indent = -1;                           // indent between text and frame - see QLabel description for more info
+		int m_line_limit = -1;                       // there should not be more than given lines of text. If not fitted - text would be elided.
 		                                             // By default influences only size hint, if strict mode is turned on - than applies on paint too.
 		                                             // 0 and negatives - line limit disabled
 
 		// cached size hint
 		mutable QSize m_cached_size_hint;
-		//mutable QSize m_cached_minumum_size_hint;
+		//mutable QSize m_cached_minimum_size_hint;
 
 	protected:
 		/// Calculates text direction - checks m_text.isRightToLeft
@@ -46,18 +46,18 @@ namespace QtTools
 		/// Prepares text option to be used by QTextLayout.
 		virtual QTextOption PrepareTextOption() const;
 		/// Lays outs m_text into given rect with given line limit, elides text in process if needed:
-		/// QTextLayout should already contain elided text, so it can be immidiatly drawn with QPainter.
+		/// QTextLayout should already contain elided text, so it can be immediately drawn with QPainter.
 		/// Rectangle should be valid -> not empty -> actually width and height should be adequate.
-		/// This method does not account ident and margin.
+		/// This method does not account indent and margin.
 		virtual auto LayoutText(const QRect & rect, int line_limit) const -> std::unique_ptr<QTextLayout>;
 		/// Calculates bounding for given text layout,
-		/// For each line from layout: accrect |= line.naturalTextRect
+		/// For each line from layout: rect |= line.naturalTextRect
 		virtual QRect NaturalBoundingRect(QTextLayout & layout) const;
 
 		/// Prepares painter for drawing label text: sets font, text color, etc
 		virtual void PreparePainter(QPainter * painter) const;
 		/// Draws label:
-		/// * layouts text into contentsRect - margin - ident
+		/// * layouts text into contentsRect - margin - indent
 		/// * draw layout into painter
 		/// This method does not anything else, for example drawing frame from QFrame,
 		/// it also does not prepares painter, that should be done by caller size
@@ -69,19 +69,19 @@ namespace QtTools
 	protected:
 		/// initializes label, called from constructor, sets widget size policy
 		void Init();
-		/// Calculates ident - see QLabel description
+		/// Calculates indent - see QLabel description
 		int GetIdent(const QFontMetrics & fm) const;
 
 	public:
 		virtual void paintEvent(QPaintEvent * event) override;
 
 	public:
-		/// Calculates label size for given width, also adds ident and margin for returned result.
+		/// Calculates label size for given width, also adds indent and margin for returned result.
 		/// if width < 0 - tries to find sensible width based on current label text
 		virtual QSize sizeForWidth(int width) const;
 		virtual int heightForWidth(int width) const override;
 
-		/// calculates label sizeHint - effictivelly calls sizeForWidth(-1)
+		/// calculates label sizeHint - effectively calls sizeForWidth(-1)
 		virtual QSize sizeHint() const override;
 		//virtual QSize minimumSizeHint() const override;
 
@@ -92,7 +92,7 @@ namespace QtTools
 		Q_SLOT void setNum(int num);
 	    Q_SLOT void setNum(double num);
 
-		/// clears ony label text
+		/// clears only label text
 		Q_SLOT void clear();
 
 		Qt::Alignment alignment() const { return m_alignment; }

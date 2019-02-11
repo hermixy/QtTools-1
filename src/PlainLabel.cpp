@@ -178,8 +178,8 @@ namespace QtTools
 
 	//QSize PlainLabel::minimumSizeHint() const
 	//{
-	//	if (m_cached_minumum_size_hint.isValid()) return m_cached_minumum_size_hint;
-	//	return m_cached_minumum_size_hint = sizeForWidth(0);
+	//	if (m_cached_minimum_size_hint.isValid()) return m_cached_minimum_size_hint;
+	//	return m_cached_minimum_size_hint = sizeForWidth(0);
 	//}
 
 	void PlainLabel::PreparePainter(QPainter * painter) const
@@ -230,7 +230,7 @@ namespace QtTools
 		pol.setHeightForWidth(m_word_wrap);
 		setSizePolicy(pol);
 
-		//m_cached_minumum_size_hint = {};
+		//m_cached_minimum_size_hint = {};
 		m_cached_size_hint = {};
 		updateGeometry();
 		update();
