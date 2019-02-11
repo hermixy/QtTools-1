@@ -25,28 +25,34 @@ namespace QtTools
 	/// по факту суммирует размер секций
 	int HeaderWidth(const QHeaderView * header);
 
-	/// вычисляет ширину tableView:
-	/// * + суммирует ширину колонок
+	/// вычисляет ширину QTableView/QListView/QTreeView:
+	/// * + суммирует ширину колонок/element flow область для QListView
 	/// * + frameWidth
-	/// * + verticalHeader()->width() if visible
+	/// * + verticalHeader()->width() if applicable and visible
 	/// * + verticalScrollBar width if withScrollBar
-	int TableWidthHint(const QTableView * view, bool withScrollBar);
+	int ItemViewWidthHint(const QTableView * view, bool withScrollBar);
+	int ItemViewWidthHint(const QTreeView  * view, bool withScrollBar);
 
-	/// вычисляет высоту tableView:
-	/// * + суммирует высоту строк колонок
+	/// вычисляет высоту QTableView/QListView/QTreeView:
+	/// * + суммирует высоту строк колонок/element flow область для QListView/QTreeView
 	/// * + frameWidth
-	/// * + horizontalHeader()->width() if visible
+	/// * + horizontalHeader()->width() if applicable and visible
 	/// * + horizontalScrollBar width if withScrollBar
-	int TableHeightHint(const QTableView * view, bool withScrollBar);
+	int ItemViewHeightHint(const QTableView * view, bool withScrollBar);
+	int ItemViewHeightHint(const QTreeView  * view, bool withScrollBar);
 
-	/// вычисляет желаемые размеры tableView:
+	/// вычисляет желаемые размеры QTableView/QListView/QTreeView:
 	/// но не превышает нижнего/верхнего пределов
-	/// * + суммирует высоту/ширину строк колонок
+	/// * + суммирует высоту/ширину строк колонок/element flow областей
 	/// * + frameWidth
-	/// * + h/v*header()->width() if visible
+	/// * + h/v*header()->width() if applicable and visible
 	/// * + h/v*scrollBar width if needed
-	QSize TableSizeHint(const QTableView * view, const QSize & minimum, const QSize & maximum,
-	                    bool forceSB = false);
+	QSize ItemViewSizeHint(const QTableView * view, const QSize & minimum, const QSize & maximum, bool forceSB = false);
+	QSize ItemViewSizeHint(const QTreeView  * view, const QSize & minimum, const QSize & maximum, bool forceSB = false);
+
+	/// вычисляет sizeHint для заданного виджета содержащего view на основе содержимого view
+	QSize ItemViewSizeHint(const QWidget * us, const QTableView * view);
+	QSize ItemViewSizeHint(const QWidget * us, const QTreeView  * view);
 
 	/// вычисляет дополнительное место занимаемое layout'ом.
 	/// на данный момент это contentsMargins
