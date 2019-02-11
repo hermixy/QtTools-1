@@ -97,24 +97,6 @@ namespace viewed
 	constexpr marked_index_type marked_index {};
 
 
-	struct null_sorter
-	{
-		template <class Type>
-		bool operator()(const Type & v1, const Type & v2) const noexcept { return &v1 < &v2; }
-
-		explicit operator bool() const noexcept { return false; }
-	};
-
-	struct null_filter
-	{
-		template <class Type>
-		bool operator()(const Type & v) const noexcept { return true; }
-
-		explicit operator bool() const noexcept { return false; }
-	};
-
-
-
 	/// inverses index array in following way:
 	/// inverse[arr[i] - offset] = i for first..last.
 	/// This is for when you have array of arr[new_index] => old_index,

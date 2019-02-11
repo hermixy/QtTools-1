@@ -2,7 +2,7 @@
 #include <vector>
 #include <algorithm>
 
-#include <viewed/refilter_type.hpp>
+#include <viewed/forward_types.hpp>
 #include <viewed/algorithm.hpp>
 #include <viewed/get_functor.hpp>
 #include <viewed/indirect_functor.hpp>

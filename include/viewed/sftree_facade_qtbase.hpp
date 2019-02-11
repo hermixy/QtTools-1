@@ -5,7 +5,7 @@
 #include <algorithm>
 
 #include <viewed/algorithm.hpp>
-#include <viewed/refilter_type.hpp>
+#include <viewed/forward_types.hpp>
 #include <viewed/get_functor.hpp>
 #include <viewed/indirect_functor.hpp>
 #include <viewed/qt_model.hpp>
