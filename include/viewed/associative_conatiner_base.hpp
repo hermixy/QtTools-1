@@ -17,10 +17,10 @@ namespace viewed
 		/// container class that stores value_type,
 		/// main_store_type should provide stable pointers/references,
 		/// iterators allowed to be invalidated on modify operations.
-		typedef implementaion_defined main_store_type;
+		typedef implementation_defined main_store_type;
 		
 		/// container type used for storing raw pointers for views notifications
-		typedef implementaion_defined signal_store_type;
+		typedef implementation_defined signal_store_type;
 
 		/// assumed internal_value_type = typename main_store_type::value_type;
 
@@ -306,7 +306,7 @@ namespace viewed
 				traits_type::update(const_cast<value_type &>(*where), std::forward<decltype(val)>(val));
 				updated.push_back(ptr);
 
-				// remove found item from erase list
+				// mark found item in erase list
 				auto it = std::lower_bound(erased_first, erased_last, ptr);
 				if (it != erased_last and *it == ptr) *it = viewed::mark_pointer(*it);
 			}

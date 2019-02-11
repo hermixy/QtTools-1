@@ -125,11 +125,11 @@ namespace viewed
 			bool resort_old = true);
 
 		/// sorts m_store's [first; last) with m_sort_pred, stable sort
-		virtual void sort(store_iterator first, store_iterator last);
+		virtual void stable_sort(store_iterator first, store_iterator last);
 		/// sorts m_store's [first; last) with m_sort_pred, stable sort
 		/// range [ifirst; ilast) must be permuted the same way as range [first; last)
-		virtual void sort(store_iterator first, store_iterator last,
-		                  int_vector_iterator ifirst, int_vector_iterator ilast);
+		virtual void stable_sort(store_iterator first, store_iterator last,
+		                         int_vector_iterator ifirst, int_vector_iterator ilast);
 
 		/// sorts m_store's [first; last) with m_sort_pred, stable sort
 		/// emits qt layoutAboutToBeChanged(..., VerticalSortHint), layoutUpdated(..., VerticalSortHint)
@@ -192,7 +192,7 @@ namespace viewed
 			std::copy_if(range.begin(), range.end(), std::back_inserter(m_store), pred);
 		}
 
-		sort(m_store.begin(), m_store.end());
+		stable_sort(m_store.begin(), m_store.end());
 
 		model->endResetModel();
 	}
@@ -401,7 +401,7 @@ namespace viewed
 	}
 
 	template <class Container, class SortPred, class FilterPred>
-	void sfview_qtbase<Container, SortPred, FilterPred>::sort(store_iterator first, store_iterator last)
+	void sfview_qtbase<Container, SortPred, FilterPred>::stable_sort(store_iterator first, store_iterator last)
 	{
 		if (not active(m_sort_pred)) return;
 
@@ -411,7 +411,7 @@ namespace viewed
 
 	template <class Container, class SortPred, class FilterPred>
 	void sfview_qtbase<Container, SortPred, FilterPred>::
-		sort(store_iterator first, store_iterator last,
+		stable_sort(store_iterator first, store_iterator last,
 	         int_vector_iterator ifirst, int_vector_iterator ilast)
 	{
 		if (not active(m_sort_pred)) return;
@@ -437,7 +437,7 @@ namespace viewed
 		auto ilast = indexes.end();
 		std::iota(ifirst, ilast, offset);
 
-		sort(first, last, ifirst, ilast);
+		stable_sort(first, last, ifirst, ilast);
 
 		viewed::inverse_index_array(ifirst, ilast, offset);
 		change_indexes(ifirst, ilast, offset);

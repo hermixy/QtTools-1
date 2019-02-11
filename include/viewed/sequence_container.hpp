@@ -19,13 +19,13 @@ namespace viewed
 		/// container class that stores value_type in some form,
 		/// main_store_type should provide stable pointers/references,
 		/// iterators allowed to be invalidated on modify operations.
-		typedef implementaion_defined main_store_type;
+		typedef implementation_defined main_store_type;
 
 		/// container type used for storing raw pointers(const value_type *) for views notifications
-		typedef implementaion_defined signal_store_type;
+		typedef implementation_defined signal_store_type;
 
 		/// assumed internal_value_type = typename main_store_type::value_type;
-		/// for exmample std::unique_ptr<Type>
+		/// for example std::unique_ptr<Type>
 
 		//////////////////////////////////////////////////////////////////////////
 		///                   traits functions/functors

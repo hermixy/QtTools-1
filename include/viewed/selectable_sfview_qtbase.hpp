@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 #include <viewed/sfview_qtbase.hpp>
 #include <ext/algorithm/slide.hpp>
 #include <boost/container/flat_set.hpp>
@@ -48,6 +48,7 @@ namespace viewed
 	protected:
 		using typename base_type::store_type;
 		using typename base_type::int_vector;
+		using typename base_type::int_vector_iterator;
 		using typename base_type::signal_range_type;
 		using typename base_type::search_hint_type;
 		using typename base_type::store_iterator;
@@ -105,7 +106,7 @@ namespace viewed
 		
 		virtual void partition(store_iterator first, store_iterator last);
 		virtual void partition(store_iterator first, store_iterator last,
-		                       int_vector::iterator ifirst, int_vector::iterator ilast);
+		                       int_vector_iterator ifirst, int_vector_iterator ilast);
 
 		virtual void partition_and_notify(store_iterator first, store_iterator last);
 
@@ -123,15 +124,15 @@ namespace viewed
 		/// range [ifirst, imiddle, ilast) must be permuted the same way as range [first, middle, last)
 		virtual void merge_newdata(
 			store_iterator first, store_iterator middle, store_iterator last,
-			int_vector::iterator ifirst, int_vector::iterator imiddle, int_vector::iterator ilast,
+			int_vector_iterator ifirst, int_vector_iterator imiddle, int_vector_iterator ilast,
 			bool resort_old = true) override;
 
 		/// sorts [first; last) with m_sort_pred, stable sorts
-		virtual void sort(store_iterator first, store_iterator last) override;
+		virtual void stable_sort(store_iterator first, store_iterator last) override;
 		/// sorts m_store's [first; last) with m_sort_pred, stable sort
 		/// range [ifirst; ilast) must be permuted the same way as range [first; last)
-		virtual void sort(store_iterator first, store_iterator last,
-		                  int_vector::iterator ifirst, int_vector::iterator ilast) override;
+		virtual void stable_sort(store_iterator first, store_iterator last,
+		                         int_vector_iterator ifirst, int_vector_iterator ilast) override;
 
 		/// get pair of iterators that hints where to search element
 		virtual search_hint_type search_hint(view_pointer_type ptr) const override;
@@ -233,11 +234,11 @@ namespace viewed
 		decltype(it) pp;
 
 		if (m_partition_by_selection_asc) {
-			auto pred = [this](pointer ptr) { return m_selection_set.count(ptr) != 0; };
+			auto pred = [this](auto ptr) { return m_selection_set.count(ptr) != 0; };
 			pp = std::partition_point(m_store.begin(), m_store.end(), pred);
 		}
 		else {
-			auto pred = [this](pointer ptr) { return m_selection_set.count(ptr) == 0; };
+			auto pred = [this](auto ptr) { return m_selection_set.count(ptr) == 0; };
 			pp = std::partition_point(m_store.begin(), m_store.end(), pred);
 		}
 
@@ -255,12 +256,12 @@ namespace viewed
 
 		if (m_partition_by_selection_asc)
 		{
-			auto pred = [this](pointer ptr) { return m_selection_set.count(ptr) != 0; };
+			auto pred = [this](auto ptr) { return m_selection_set.count(ptr) != 0; };
 			pp = std::partition_point(m_store.begin(), m_store.end(), pred);
 		}
 		else
 		{
-			auto pred = [this](pointer ptr) { return m_selection_set.count(ptr) == 0; };
+			auto pred = [this](auto ptr) { return m_selection_set.count(ptr) == 0; };
 			pp = std::partition_point(m_store.begin(), m_store.end(), pred);
 		}
 
@@ -302,7 +303,7 @@ namespace viewed
 	template <class Container, class SortPred, class FilterPred>
 	void viewed::selectable_sfview_qtbase<Container, SortPred, FilterPred>::
 		partition(store_iterator first, store_iterator last,
-		          int_vector::iterator ifirst, int_vector::iterator ilast)
+		          int_vector_iterator ifirst, int_vector_iterator ilast)
 	{
 		auto zfirst = ext::make_zip_iterator(first, ifirst);
 		auto zlast = ext::make_zip_iterator(last, ilast);
@@ -353,7 +354,7 @@ namespace viewed
 	template <class Container, class SortPred, class FilterPred>
 	void selectable_sfview_qtbase<Container, SortPred, FilterPred>::
 		merge_newdata(store_iterator first, store_iterator middle, store_iterator last,
-		              int_vector::iterator ifirst, int_vector::iterator imiddle, int_vector::iterator ilast,
+		              int_vector_iterator ifirst, int_vector_iterator imiddle, int_vector_iterator ilast,
 		              bool resort_old)
 	{
 		if (m_partition_by_selection)
@@ -363,23 +364,22 @@ namespace viewed
 	}
 
 	template <class Container, class SortPred, class FilterPred>
-	void selectable_sfview_qtbase<Container, SortPred, FilterPred>::sort(store_iterator first, store_iterator last)
+	void selectable_sfview_qtbase<Container, SortPred, FilterPred>::stable_sort(store_iterator first, store_iterator last)
 	{
 		if (m_partition_by_selection)
 			return partition(first, last);
 		else
-			return base_type::sort(first, last);
+			return base_type::stable_sort(first, last);
 	}
 
 	template <class Container, class SortPred, class FilterPred>
 	void selectable_sfview_qtbase<Container, SortPred, FilterPred>::
-		sort(store_iterator first, store_iterator last,
-		     int_vector::iterator ifirst, int_vector::iterator ilast)
+		stable_sort(store_iterator first, store_iterator last, int_vector_iterator ifirst, int_vector_iterator ilast)
 	{
 		if (m_partition_by_selection)
 			return partition(first, last, ifirst, ilast);
 		else
-			return base_type::sort(first, last, ifirst, ilast);
+			return base_type::stable_sort(first, last, ifirst, ilast);
 	}
 
 	template <class Container, class SortPred, class FilterPred>

@@ -53,6 +53,17 @@ namespace viewed
 		}
 	};
 
+	struct toggle_pointer_mark_type
+	{
+		template <class Type>
+		constexpr Type operator()(Type ptr) const noexcept
+		{
+			static_assert(std::is_pointer_v<Type>);
+			auto ptr_val = reinterpret_cast<std::uintptr_t>(ptr) ^ static_cast<std::uintptr_t>(1);
+			return reinterpret_cast<Type>(ptr_val);
+		}
+	};
+
 	struct marked_pointer_type
 	{
 		template <class Type>
@@ -79,6 +90,14 @@ namespace viewed
 		}
 	};
 
+	struct toggle_index_mark_type
+	{
+		constexpr int operator()(int idx) const noexcept
+		{
+			return idx ^ detail::INDEX_MARK_MASK;
+		}
+	};
+
 	struct marked_index_type
 	{
 		constexpr bool operator()(int idx) const noexcept
@@ -91,10 +110,12 @@ namespace viewed
 	constexpr mark_pointer_type   mark_pointer {};
 	constexpr unmark_pointer_type unmark_pointer {};
 	constexpr marked_pointer_type marked_pointer {};
+	constexpr toggle_pointer_mark_type toggle_pointer_mark {};
 
 	constexpr mark_index_type   mark_index {};
 	constexpr unmark_index_type unmark_index {};
 	constexpr marked_index_type marked_index {};
+	constexpr toggle_index_mark_type toggle_index_mark {};
 
 
 	/// inverses index array in following way:
